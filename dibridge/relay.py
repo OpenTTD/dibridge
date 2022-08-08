@@ -1,0 +1,2 @@
+DISCORD = None
+IRC = None
