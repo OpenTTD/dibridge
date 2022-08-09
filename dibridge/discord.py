@@ -40,9 +40,14 @@ class RelayDiscord(discord.Client):
             sys.exit(1)
 
         # Make sure there is a webhook on the channel to use for relaying.
-        if not await self._channel.webhooks():
-            await self._channel.create_webhook(name="ircbridge")
-        self._channel_webhook = (await self._channel.webhooks())[0]
+        for webhook in await self._channel.webhooks():
+            if webhook.token is not None:
+                self._channel_webhook = webhook
+                break
+        else:
+            self._channel_webhook = await self._channel.create_webhook(
+                name="ircbridge", reason="To bridge IRC messages to Discord"
+            )
 
         log.info("Logged on to Discord as '%s'", self.user)
 
