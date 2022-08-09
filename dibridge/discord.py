@@ -3,6 +3,7 @@ import discord
 import logging
 import re
 import sys
+import textwrap
 
 from . import relay
 
@@ -71,7 +72,7 @@ class RelayDiscord(discord.Client):
                 and not content.startswith(f"{identifer}:")
                 and content != f"{identifer}"
             ):
-                return f"{name}: " + content[len(f"{identifer}") :]
+                return f"{name}: " + content[len(f"{identifer}") :].strip()
 
             # Otherwise it is just an inline replacement.
             return content.replace(f"{identifer}", name)
@@ -105,14 +106,13 @@ class RelayDiscord(discord.Client):
         content = content.replace("\r\n", "\n").replace("\r", "\n").strip()
 
         # On Discord text between _ and _ is what IRC calls an action.
-        if content.startswith("_") and content.endswith("_") and "\n" not in content:
+        # IRC allows messages of ~470 characters, so if the action is longer, make it a multi-line message instead.
+        if content.startswith("_") and content.endswith("_") and "\n" not in content and len(content) < 470:
             relay.IRC.send_action(message.author.id, message.author.name, content[1:-1])
         else:
-            for line in content.split("\n"):
-                line = line.strip()
-
-                # Don't relay empty lines; they don't look nice on IRC.
-                if line:
+            for full_line in content.split("\n"):
+                # Split the message in lines of at most 470 characters, breaking on words.
+                for line in textwrap.wrap(full_line.strip(), 470):
                     relay.IRC.send_message(message.author.id, message.author.name, line)
 
     async def on_error(self, event, *args, **kwargs):
