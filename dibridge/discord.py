@@ -25,6 +25,10 @@ class RelayDiscord(discord.Client):
 
         self._channel_id = channel_id
 
+        # Anyone that has spoken in the Discord channel, will get a highlight if their name is used on IRC.
+        # This is especially needed as on IRC your Discord name is used, not your nick.
+        self._mentions = {}
+
         self.loop = asyncio.get_event_loop()
 
     async def on_ready(self):
@@ -43,6 +47,15 @@ class RelayDiscord(discord.Client):
         log.info("Logged on to Discord as '%s'", self.user)
 
     async def send_message(self, irc_username, message):
+        # If the user is mentioned in the message, highlight them.
+        for username, id in self._mentions.items():
+            # On IRC, it is common to do "name: ", but on Discord you don't do that ": " part.
+            if message.startswith(f"{username}: "):
+                message = f"<@{id}> " + message[len(f"{username}: ") :]
+
+            # If the username is said as its own word, replace it with a Discord highlight.
+            message = re.sub(r"(?<!\w)" + username + r"(?!\w)", f"<@{id}>", message)
+
         await self._channel_webhook.send(
             message,
             username=irc_username,
@@ -106,6 +119,7 @@ class RelayDiscord(discord.Client):
         for emoji in find_emojis(content):
             content = replace_mention("<:", ">", f"{emoji['name']}:{emoji['id']}", f":{emoji['name']}:", content)
 
+        self._mentions[message.author.name] = message.author.id
         asyncio.run_coroutine_threadsafe(relay.IRC.send_message(message.author.name, content), relay.IRC.loop)
 
     async def on_error(self, event, *args, **kwargs):
