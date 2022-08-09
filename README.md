@@ -29,7 +29,7 @@ Options:
 ```
 
 You can also set environment variables instead of using the options.
-`IRC_DISCORD_BRIDGE_DISCORD_TOKEN` for example sets the `--discord-token`.
+`DIBRIDGE_DISCORD_TOKEN` for example sets the `--discord-token`.
 It is strongly advised to use environment variables for secrets and tokens.
 
 ## Development
