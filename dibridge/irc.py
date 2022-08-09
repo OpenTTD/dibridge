@@ -114,7 +114,7 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
             return
 
         if discord_id not in self._puppets:
-            self._puppets[discord_id] = IRCPuppet(discord_username, self._channel)
+            self._puppets[discord_id] = IRCPuppet(self._sanitize_discord_username(discord_username), self._channel)
             asyncio.create_task(self._puppets[discord_id].connect(self._host, self._port))
 
         if is_action:
@@ -138,6 +138,17 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
         self._users_spoken[irc_username] = time.time()
         relay.DISCORD.send_message(irc_username, message)
 
+    def _sanitize_discord_username(self, discord_username):
+        discord_username = discord_username.strip()
+        # Remove all characters not allowed in IRC usernames.
+        discord_username = re.sub(r"[^a-zA-Z0-9_\-\[\]\{\}\|]", "", discord_username)
+        # Make sure a username doesn't start with a number or "-".
+        discord_username = re.sub(r"^[0-9\-]", "", discord_username)
+        # Make sure a username is no more than 20 character.
+        # Depending on the IRC network, different lengths are allowed.
+        discord_username = discord_username[:20]
+        return discord_username
+
     async def _stop(self):
         sys.exit(1)
 
@@ -145,7 +156,7 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
 
     def get_irc_username(self, discord_id, discord_username):
         if discord_id not in self._puppets:
-            return discord_username
+            return self._sanitize_discord_username(discord_username)
 
         return self._puppets[discord_id]._nickname
 
