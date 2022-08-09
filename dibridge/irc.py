@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 
 
 class IRCRelay(irc.client_aio.AioSimpleIRCClient):
-    def __init__(self, host, port, nickname, channel):
+    def __init__(self, host, port, nickname, channel, single_presence):
         irc.client.SimpleIRCClient.__init__(self)
 
         self._loop = asyncio.get_event_loop()
@@ -23,6 +23,7 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
         self._joined = False
         self._tell_once = True
         self._channel = channel
+        self._single_presence = single_presence
 
         # List of users when they have last spoken.
         self._users_spoken = {}
@@ -106,6 +107,12 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
                 )
             return
 
+        if self._single_presence:
+            if is_action:
+                message = f"/me {message}"
+            self._client.privmsg(self._channel, f"<{discord_username}>: {message}")
+            return
+
         if discord_id not in self._puppets:
             self._puppets[discord_id] = IRCPuppet(discord_username, self._channel)
             asyncio.create_task(self._puppets[discord_id].connect(self._host, self._port))
@@ -154,10 +161,10 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
         asyncio.run_coroutine_threadsafe(self._stop(), self._loop)
 
 
-def start(host, port, name, channel):
+def start(host, port, name, channel, single_presence):
     asyncio.set_event_loop(asyncio.new_event_loop())
 
-    relay.IRC = IRCRelay(host, port, name, channel)
+    relay.IRC = IRCRelay(host, port, name, channel, single_presence)
 
     log.info("Connecting to IRC ...")
     asyncio.get_event_loop().run_until_complete(relay.IRC._connect())
