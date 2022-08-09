@@ -124,8 +124,19 @@ class RelayDiscord(discord.Client):
         for emoji in find_emojis(content):
             content = replace_mention("<:", ">", f"{emoji['name']}:{emoji['id']}", f":{emoji['name']}:", content)
 
+        # Allow highlights for users that have talked.
         self._mentions[message.author.name] = message.author.id
-        asyncio.run_coroutine_threadsafe(relay.IRC.send_message(message.author.name, content), relay.IRC.loop)
+
+        # First, send any attachment as links.
+        for attachment in message.attachments:
+            asyncio.run_coroutine_threadsafe(
+                relay.IRC.send_message(message.author.name, attachment.url), relay.IRC.loop
+            )
+
+        # Next, send the actual message if it wasn't empty.
+        # It is empty if for example someone only sends an attachment.
+        if content:
+            asyncio.run_coroutine_threadsafe(relay.IRC.send_message(message.author.name, content), relay.IRC.loop)
 
     async def on_error(self, event, *args, **kwargs):
         log.exception("on_error(%s): %r / %r", event, args, kwargs)
