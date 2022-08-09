@@ -23,7 +23,7 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
         # List of users when they have last spoken.
         self._users_spoken = {}
 
-        self.connect(host, port, nickname)
+        self.connect(host, port, nickname, connect_factory=irc.connection.AioFactory(ssl=True))
 
     async def send_message(self, discord_username, content):
         # If we aren't connected to IRC yet, tell this to the Discord users; but only once.
