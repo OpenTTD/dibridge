@@ -1,6 +1,7 @@
 import asyncio
 import discord
 import logging
+import re
 import sys
 
 from . import relay
@@ -69,7 +70,43 @@ class RelayDiscord(discord.Client):
         if message.type != discord.MessageType.default:
             return
 
-        asyncio.run_coroutine_threadsafe(relay.IRC.send_message(message.author.name, message.content), relay.IRC.loop)
+        content = message.content
+
+        def replace_mention(prefix, postfix, id, name, content):
+            identifer = f"{prefix}{id}{postfix}"
+
+            # At the beginning of the line, on IRC it is custom to add a ": " behind the highlight.
+            if (
+                content.startswith(f"{identifer}")
+                and not content.startswith(f"{identifer}:")
+                and content != f"{identifer}"
+            ):
+                return f"{name}: " + content[len(f"{identifer}") :]
+
+            # Otherwise it is just an inline replacement.
+            return content.replace(f"{identifer}", name)
+
+        # Replace all mentions in the message with the username (<@12345679>)
+        for mention in message.mentions:
+            content = replace_mention("<@", ">", mention.id, mention.name, content)
+        # Replace all channel mentions in the message with the channel name (<#123456789>).
+        for channel in message.channel_mentions:
+            content = replace_mention("<#", ">", channel.id, f"Discord channel #{channel.name}", content)
+        # Replace all role mentions in the message with the role name (<@&123456789>).
+        for role in message.role_mentions:
+            content = replace_mention("<@&", ">", role.id, role.name, content)
+        content = replace_mention("@", "", "everyone", "all", content)
+        content = replace_mention("@", "", "here", "all", content)
+
+        # Replace all emoji mentions in the message with the emoji name (<:emoji:123456789>).
+        # (sadly, discord.py library doesn't have support for it)
+        def find_emojis(content):
+            return [{"id": id, "name": name} for name, id in re.findall(r"<:(\w+):([0-9]{15,20})>", content)]
+
+        for emoji in find_emojis(content):
+            content = replace_mention("<:", ">", f"{emoji['name']}:{emoji['id']}", f":{emoji['name']}:", content)
+
+        asyncio.run_coroutine_threadsafe(relay.IRC.send_message(message.author.name, content), relay.IRC.loop)
 
     async def on_error(self, event, *args, **kwargs):
         log.exception("on_error(%s): %r / %r", event, args, kwargs)
