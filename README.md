@@ -11,6 +11,33 @@ This server logs in to both IRC and Discord, and forward messages between the tw
 This server is very limited, as in: it only bridges a single Discord channel with a single IRC channel.
 If you want to bridge multiple, you will have to run more than one server.
 
+## Implementation
+
+The idea behind this bridge is to be as native on Discord as on IRC.
+That on both sides, it is hard to notice you are not talking to a native user.
+
+For Discord, this means we use multi-presence.
+Every IRC user gets its own Discord user to talk to you, including its own avatar.
+Highlights on IRC, after you talked in the Discord channel, are converted to Discord highlights.
+In other words, it looks and feels like you are talking to a Disord user.
+
+For IRC, this also means we use multi-presence.
+Once you said something in the Discord channel, an IRC puppet is created with your name, that joins the IRC network.
+Highlights on Discord are converted to readable names on IRC, which you can use again to create a highlight on Discord.
+In other words, it looks and feels like you are talking to an IRC user.
+
+It is really important to make it feel as native as possible.
+This with the goal that the IRC population doesn't think strange about this, and that the Discord population can just do their thing.
+
+There are however some limitations:
+- Edits on Discord are not send to IRC.
+- Reactions on Discord are not send to IRC.
+- Replies on Discord are send as normal text to IRC.
+  After all, IRC doesn't know any form of threading.
+- This bridges a single Discord channel to a single IRC channel, and nothing more.
+- On IRC you do not see who is online on Discord unless they said something.
+- On Discord you do not see who is online on IRC unless they said something.
+
 ## Usage
 
 ```
@@ -48,39 +75,36 @@ As such, many old-timers really like being there, everyone mostly knows each oth
 On the other hand, it isn't the most friendly platform to great new players with questions, to share screenshots, etc.
 Discord does deliver that, but that means the community is split in two.
 
-So, we needed a bridge to .. bridge that gap.
+So, we needed to bridge that gap.
 
-Now there are several ways about this.
+Now there are several ways to go about this.
 
 First, one can just close IRC and say: go to Discord.
 This is not the most popular choice, as a few people would rather die on the sword than switch.
-As OpenTTD, we like to be inclusive.
+And as OpenTTD, we like to be inclusive.
 So not an option.
 
-Second, we can bridge IRC and Discord, so we can read on Discord what is going on on IRC, and participate without actually opening an IRC client.
+Second, we can bridge IRC and Discord, so we can read on Discord what happens on IRC, and participate without actually opening an IRC client.
 This is a much better option.
 
 Now there are a few projects that already do this.
-But all of them don't exactly fit our needs.
+For example:
+- https://github.com/qaisjp/go-discord-irc
+- https://github.com/42wim/matterbridge
+- https://github.com/reactiflux/discord-irc
 
-- https://github.com/qaisjp/go-discord-irc: awesome project and rather stable.
-  But it has either of two modes:
-  - Have a single user presence on IRC relaying everything.
-  - Have every user on Discord present on IRC, each with their own connection.
-  We like the second option, but there are thousands of users on Discord.
-  This will not go well.
-  This bridge solves that issue by only creating an IRC connection once someone talks in the Discord channel that is being bridged.
-  That way, the amount of connections to IRC are reduced as much as possible.
-- https://github.com/42wim/matterbridge: can truly connnect everything.
-  But that is instantly the downfall: it connects everything.
-  The complexity is just too high to maintain long-term.
-  Additionally, it uses a single user presence on IRC.
-- https://github.com/reactiflux/discord-irc: not sure if it is actually still supported, but otherwise looks mature.
-  But, the main drawback: it doesn't use Discord's method of imitation a user, and instead uses a single user presence on Discord.
-  That is really annoying really quick.
+Sadly, most of those only support a single presence on IRC.
+This is for our use-case rather annoying, as it makes it much more obvious that things are bridged.
+As people on IRC can be grumpy, they will not take kind of that.
+Additionally, things like user-highlighting etc won't work.
 
-So after running out of existing options, it was time to build our own.
-And this repository is a consequence of that action.
+The first one on the list does support it, but in such way that is impractical: every user on Discord gets an IRC puppet.
+That would be thousands of outgoing IRC connections.
+
+For example Matrix does do this properly: when you join the channel explicitly, it creates an IRC puppet.
+
+So, we needed something "in between".
+And that is what this repository delivers.
 
 Codewise, thanks to the awesome [irc](https://github.com/jaraco/irc) and [discord.py](https://github.com/Rapptz/discord.py), it is relative trivial.
 A bit ironic that the oldest of the two (IRC), is the hardest to implement.
