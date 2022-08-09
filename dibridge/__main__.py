@@ -21,9 +21,17 @@ log = logging.getLogger(__name__)
 @click.option("--irc-port", help="IRC SSL port to connect to", default=6697, type=int)
 @click.option("--irc-nick", help="IRC nick to use", required=True)
 @click.option("--irc-channel", help="IRC channel to relay to", required=True)
-def main(discord_token, discord_channel_id, irc_host, irc_port, irc_nick, irc_channel):
+@click.option(
+    "--irc-single-presence",
+    help="Whether to use a single IRC presence (otherwise it creates a presence for everyone speaking on Discord)",
+    is_flag=True,
+    default=False,
+)
+def main(discord_token, discord_channel_id, irc_host, irc_port, irc_nick, irc_channel, irc_single_presence):
     thread_d = threading.Thread(target=discord.start, args=[discord_token, discord_channel_id])
-    thread_i = threading.Thread(target=irc.start, args=[irc_host, irc_port, irc_nick, f"#{irc_channel}"])
+    thread_i = threading.Thread(
+        target=irc.start, args=[irc_host, irc_port, irc_nick, f"#{irc_channel}", irc_single_presence]
+    )
 
     thread_d.start()
     thread_i.start()

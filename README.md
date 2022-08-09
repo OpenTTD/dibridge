@@ -19,7 +19,6 @@ Here is a list of things that still needs doing:
 - [ ] Allow binding to different IPv6 address for each IRC puppet.
 - [ ] Disconnect IRC puppet if it hasn't seen activity for 7 days.
 - [ ] Set IRC status to away if user goes offline on Discord.
-- [ ] Option to switch to single-presence IRC.
 - [ ] Show IRC joins if the user talked recently, left, but came back.
 - [ ] Validate all Discord messages are handled properly.
 - [ ] Validate all IRC messages are handled properly.
