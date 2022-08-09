@@ -11,6 +11,20 @@ This server logs in to both IRC and Discord, and forward messages between the tw
 This server is very limited, as in: it only bridges a single Discord channel with a single IRC channel.
 If you want to bridge multiple, you will have to run more than one server.
 
+## TODO-list
+
+This software is currently in pre-alpha.
+Here is a list of things that still needs doing:
+
+- [ ] Allow binding to different IPv6 address for each IRC puppet.
+- [ ] Disconnect IRC puppet if it hasn't seen activity for 7 days.
+- [ ] Set IRC status to away if user goes offline on Discord.
+- [ ] Option to switch to single-presence IRC.
+- [ ] Show IRC joins if the user talked recently, left, but came back.
+- [ ] Validate all Discord messages are handled properly.
+- [ ] Validate all IRC messages are handled properly.
+- [ ] Investigate IRC private messages, if we can relay them to Discord and back.
+
 ## Implementation
 
 The idea behind this bridge is to be as native on Discord as on IRC.
@@ -32,9 +46,7 @@ This with the goal that the IRC population doesn't think strange about this, and
 There are however some limitations:
 - Edits on Discord are not send to IRC.
 - Reactions on Discord are not send to IRC.
-- Replies on Discord are send as normal text to IRC.
-  After all, IRC doesn't know any form of threading.
-- This bridges a single Discord channel to a single IRC channel, and nothing more.
+- This bridges a single Discord channel to a single IRC channel, and no more.
 - On IRC you do not see who is online on Discord unless they said something.
 - On Discord you do not see who is online on IRC unless they said something.
 

@@ -25,18 +25,12 @@ class RelayDiscord(discord.Client):
 
         self._channel_id = channel_id
 
-        # Anyone that has spoken in the Discord channel, will get a highlight if their name is used on IRC.
-        # This is especially needed as on IRC your Discord name is used, not your nick.
-        self._mentions = {}
-
-        self.loop = asyncio.get_event_loop()
-
     async def on_ready(self):
         # Check if we have access to the channel.
         self._channel = self.get_channel(self._channel_id)
         if not self._channel:
             log.error("Discord channel ID %s not found", self._channel_id)
-            asyncio.run_coroutine_threadsafe(relay.IRC.stop(), relay.IRC.loop)
+            relay.IRC.stop()
             sys.exit(1)
 
         # Make sure there is a webhook on the channel to use for relaying.
@@ -51,32 +45,6 @@ class RelayDiscord(discord.Client):
 
         log.info("Logged on to Discord as '%s'", self.user)
 
-    async def send_message(self, irc_username, message):
-        # If the user is mentioned in the message, highlight them.
-        for username, id in self._mentions.items():
-            # On IRC, it is common to do "name: ", but on Discord you don't do that ": " part.
-            if message.startswith(f"{username}: "):
-                message = f"<@{id}> " + message[len(f"{username}: ") :]
-
-            # If the username is said as its own word, replace it with a Discord highlight.
-            message = re.sub(r"(?<!\w)" + username + r"(?!\w)", f"<@{id}>", message)
-
-        await self._channel_webhook.send(
-            message,
-            username=irc_username,
-            suppress_embeds=True,
-            avatar_url=f"https://robohash.org/${irc_username}.png?set=set4",
-        )
-
-    async def send_message_self(self, message):
-        await self._channel.send(message)
-
-    async def update_presence(self, status):
-        await self.change_presence(
-            activity=discord.Activity(type=discord.ActivityType.watching, name=status),
-            status=discord.Status.online,
-        )
-
     async def on_message(self, message):
         # Only monitor the indicated channel.
         if message.channel.id != self._channel_id:
@@ -84,11 +52,15 @@ class RelayDiscord(discord.Client):
         # We don't care what bots have to say.
         if message.author.bot:
             return
-        # We don't care if it isn't a normal message.
-        if message.type != discord.MessageType.default:
+        # We don't care if it isn't a message or a reply.
+        if message.type not in (discord.MessageType.default, discord.MessageType.reply):
             return
 
         content = message.content
+
+        if message.type == discord.MessageType.reply:
+            author = message.reference.resolved.author
+            content = f"{relay.IRC.get_irc_username(author.id, author.name)}: {content}"
 
         def replace_mention(prefix, postfix, id, name, content):
             identifer = f"{prefix}{id}{postfix}"
@@ -106,7 +78,9 @@ class RelayDiscord(discord.Client):
 
         # Replace all mentions in the message with the username (<@12345679>)
         for mention in message.mentions:
-            content = replace_mention("<@", ">", mention.id, mention.name, content)
+            content = replace_mention(
+                "<@", ">", mention.id, relay.IRC.get_irc_username(mention.id, mention.name), content
+            )
         # Replace all channel mentions in the message with the channel name (<#123456789>).
         for channel in message.channel_mentions:
             content = replace_mention("<#", ">", channel.id, f"Discord channel #{channel.name}", content)
@@ -124,29 +98,57 @@ class RelayDiscord(discord.Client):
         for emoji in find_emojis(content):
             content = replace_mention("<:", ">", f"{emoji['name']}:{emoji['id']}", f":{emoji['name']}:", content)
 
-        # Allow highlights for users that have talked.
-        self._mentions[message.author.name] = message.author.id
-
         # First, send any attachment as links.
         for attachment in message.attachments:
-            asyncio.run_coroutine_threadsafe(
-                relay.IRC.send_message(message.author.name, attachment.url), relay.IRC.loop
-            )
+            relay.IRC.send_message(message.author.id, message.author.name, attachment.url)
+
+        content = content.replace("\r\n", "\n").replace("\r", "\n")
 
         # Next, send the actual message if it wasn't empty.
         # It is empty if for example someone only sends an attachment.
         if content:
-            asyncio.run_coroutine_threadsafe(relay.IRC.send_message(message.author.name, content), relay.IRC.loop)
+            # On Discord text between _ and _ is what IRC calls an action.
+            if content.startswith("_") and content.endswith("_") and "\n" not in content:
+                relay.IRC.send_action(message.author.id, message.author.name, content[1:-1])
+            else:
+                for line in content.split("\n"):
+                    relay.IRC.send_message(message.author.id, message.author.name, line)
 
     async def on_error(self, event, *args, **kwargs):
         log.exception("on_error(%s): %r / %r", event, args, kwargs)
 
-    async def stop(self):
+    async def _send_message(self, irc_username, message):
+        await self._channel_webhook.send(
+            message,
+            username=irc_username,
+            suppress_embeds=True,
+            avatar_url=f"https://robohash.org/${irc_username}.png?set=set4",
+        )
+
+    async def _send_message_self(self, message):
+        await self._channel.send(message)
+
+    async def _update_presence(self, status):
+        await self.change_presence(
+            activity=discord.Activity(type=discord.ActivityType.watching, name=status),
+            status=discord.Status.online,
+        )
+
+    async def _stop(self):
         sys.exit(1)
+
+    # Thread safe wrapper around functions
+
+    def send_message(self, irc_username, message):
+        asyncio.run_coroutine_threadsafe(self._send_message(irc_username, message), self.loop)
+
+    def send_message_self(self, message):
+        asyncio.run_coroutine_threadsafe(self._send_message_self(message), self.loop)
+
+    def update_presence(self, status):
+        asyncio.run_coroutine_threadsafe(self._update_presence(status), self.loop)
 
 
 def start(token, channel_id):
-    asyncio.set_event_loop(asyncio.new_event_loop())
-
     relay.DISCORD = RelayDiscord(channel_id)
     relay.DISCORD.run(token)
