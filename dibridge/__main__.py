@@ -33,4 +33,4 @@ def main(discord_token, discord_channel_id, irc_host, irc_port, irc_nick, irc_ch
 
 
 if __name__ == "__main__":
-    main(auto_envvar_prefix="IRC_DISCORD_BRIDGE")
+    main(auto_envvar_prefix="DIBRIDGE")
