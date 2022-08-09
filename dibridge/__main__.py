@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 @click.option("--discord-token", help="Discord bot token to authenticate", required=True)
 @click.option("--discord-channel-id", help="Discord channel ID to relay to", required=True, type=int)
 @click.option("--irc-host", help="IRC host to connect to", required=True)
-@click.option("--irc-port", help="IRC port to connect to", default=6667, type=int)
+@click.option("--irc-port", help="IRC SSL port to connect to", default=6697, type=int)
 @click.option("--irc-nick", help="IRC nick to use", required=True)
 @click.option("--irc-channel", help="IRC channel to relay to", required=True)
 def main(discord_token, discord_channel_id, irc_host, irc_port, irc_nick, irc_channel):
