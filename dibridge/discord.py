@@ -102,16 +102,17 @@ class RelayDiscord(discord.Client):
         for attachment in message.attachments:
             relay.IRC.send_message(message.author.id, message.author.name, attachment.url)
 
-        content = content.replace("\r\n", "\n").replace("\r", "\n")
+        content = content.replace("\r\n", "\n").replace("\r", "\n").strip()
 
-        # Next, send the actual message if it wasn't empty.
-        # It is empty if for example someone only sends an attachment.
-        if content:
-            # On Discord text between _ and _ is what IRC calls an action.
-            if content.startswith("_") and content.endswith("_") and "\n" not in content:
-                relay.IRC.send_action(message.author.id, message.author.name, content[1:-1])
-            else:
-                for line in content.split("\n"):
+        # On Discord text between _ and _ is what IRC calls an action.
+        if content.startswith("_") and content.endswith("_") and "\n" not in content:
+            relay.IRC.send_action(message.author.id, message.author.name, content[1:-1])
+        else:
+            for line in content.split("\n"):
+                line = line.strip()
+
+                # Don't relay empty lines; they don't look nice on IRC.
+                if line:
                     relay.IRC.send_message(message.author.id, message.author.name, line)
 
     async def on_error(self, event, *args, **kwargs):
