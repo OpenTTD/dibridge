@@ -10,6 +10,7 @@ class IRCPuppet(irc.client_aio.AioSimpleIRCClient):
         self.loop = asyncio.get_event_loop()
 
         self._nickname = nickname
+        self._nickname_iteration = 0
         self._joined = False
         self._channel = channel
 
@@ -19,18 +20,17 @@ class IRCPuppet(irc.client_aio.AioSimpleIRCClient):
         self._log = logging.getLogger(f"{__name__}.{self._nickname}")
 
     def on_nicknameinuse(self, client, event):
-        if not self._nickname.endswith("[d]"):
+        # First iteration, try adding a [d] (Discord, get it?).
+        if self._nickname_iteration == 0:
             self._nickname = f"{self._nickname}[d]"
+            self._nickname_iteration += 1
             client.nick(self._nickname)
             return
 
-        if not self._nickname.endswith("~"):
-            self._nickname += "~"
-            client.nick(self._nickname)
-            return
-
-        # TODO -- Other things we can try?
-        self._log.error("Nickname already in use; giving up")
+        # [d] is already in use, try adding a [1], [2], ..
+        f"{self._nickname[:-3]}[{self._nickname_iteration}]"
+        self._nickname_iteration += 1
+        client.nick(self._nickname)
 
     def on_welcome(self, client, event):
         self._client = client
