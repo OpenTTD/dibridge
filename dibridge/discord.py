@@ -17,7 +17,10 @@ class RelayDiscord(discord.Client):
         # - members, as otherwise 'presences' doesn't work.
         # - message_content, as we actually want to know the message content.
         intents = discord.Intents(messages=True, guilds=True, presences=True, members=True, message_content=True)
-        super().__init__(intents=intents)
+        # Don't allow IRC users to be cheeky, and don't allow @everyone etc.
+        allowed_mentions = discord.AllowedMentions.none()
+        allowed_mentions.users = True
+        super().__init__(intents=intents, allowed_mentions=allowed_mentions)
 
         self._channel_id = channel_id
 
