@@ -28,7 +28,7 @@ class IRCPuppet(irc.client_aio.AioSimpleIRCClient):
             return
 
         # [d] is already in use, try adding a [1], [2], ..
-        f"{self._nickname[:-3]}[{self._nickname_iteration}]"
+        self._nickname = f"{self._nickname[:-3]}[{self._nickname_iteration}]"
         self._nickname_iteration += 1
         client.nick(self._nickname)
 
