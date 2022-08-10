@@ -16,12 +16,9 @@ If you want to bridge multiple, you will have to run more than one server.
 This software is currently in pre-alpha.
 Here is a list of things that still needs doing:
 
-- [ ] Allow binding to different IPv6 address for each IRC puppet.
 - [ ] Disconnect IRC puppet if it hasn't seen activity for 7 days.
 - [ ] Set IRC status to away if user goes offline on Discord.
 - [ ] Show IRC joins if the user talked recently, left, but came back.
-- [ ] Validate all Discord messages are handled properly.
-- [ ] Validate all IRC messages are handled properly.
 - [ ] Investigate IRC private messages, if we can relay them to Discord and back.
 
 ## Implementation
@@ -60,15 +57,63 @@ Options:
   --discord-token TEXT          Discord bot token to authenticate  [required]
   --discord-channel-id INTEGER  Discord channel ID to relay to  [required]
   --irc-host TEXT               IRC host to connect to  [required]
-  --irc-port INTEGER            IRC port to connect to
+  --irc-port INTEGER            IRC SSL port to connect to
   --irc-nick TEXT               IRC nick to use  [required]
   --irc-channel TEXT            IRC channel to relay to  [required]
+  --irc-puppet-ip-range TEXT    An IPv6 CIDR range to use for IRC puppets
   -h, --help                    Show this message and exit.
 ```
 
 You can also set environment variables instead of using the options.
 `DIBRIDGE_DISCORD_TOKEN` for example sets the `--discord-token`.
 It is strongly advised to use environment variables for secrets and tokens.
+
+### IRC Puppet IP Range
+
+The more complicated setting in this row is `--irc-puppet-ip-range`, and needs some explaining.
+
+Without this setting, the bridge will join the IRC channel with a single user, and relays all messages via that single user.
+This means it sends things like: `<username> hi`.
+The problem with this is, that it isn't really giving this native IRC feel.
+Neither can you do `us<tab>` to quickly send a message to the username.
+
+A much better way is to join the IRC channel with a user for every person talking on Discord.
+But as most IRC networks do not allow connecting with multiple users from the same IP address (most networks allow 3 before blocking the 4th), we need a bit of a trick.
+
+`--irc-puppet-ip-range` defines a range of IP address to use.
+For every user talking on Discord, the bridge creates a new connection to the IRC channel with a unique IP address for that user from this range.
+
+In order for this to work, you do need to setup a few things.
+First of all, you need Linux 4.3+ for this to work.
+Next, you need to have an IPv6 prefix, of which you can delegate a part to this bridge.
+
+All decent ISPs these days can assign you an IPv6 prefix, mostly a `/64` or better.
+We only need a `/80` for this, so that is fine.
+Similar, cloud providers also offer assigning IPv6 prefixes to VMs.
+For example [AWS allows you to assign a `/80` to a single VM](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-prefix-eni.html).
+
+Next, you need to make sure that this prefix is forwarded to the machine you are hosting the bridge on.
+For example:
+```bash
+ip route add local ${prefix} dev eth0
+ip a add local ${prefix} dev eth0
+```
+
+Where `${prefix}` is something like `2001:db8::/80`.
+Please use a part of the prefix assigned by your ISP, and not this example.
+
+Next, we need to tell the kernel to allow us to bind to IP addresses that are not local:
+```bash
+sysctl -w net.ipv6.ip_nonlocal_bind=1
+```
+
+And that is it.
+Now we can call this bridge with, for example, `--irc-puppet-ip-range 2001:db8::/80`.
+IRC puppets will now use an IP in that range.
+
+And don't worry, the same Discord user will always get the same IPv6 (given the range stays the same).
+So if they get banned on IRC, they are done.
+
 
 ## Development
 

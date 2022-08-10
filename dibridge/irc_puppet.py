@@ -1,14 +1,16 @@
 import asyncio
 import irc.client_aio
 import logging
+import socket
 
 
 class IRCPuppet(irc.client_aio.AioSimpleIRCClient):
-    def __init__(self, nickname, channel):
+    def __init__(self, ipv6_address, nickname, channel):
         irc.client.SimpleIRCClient.__init__(self)
 
         self.loop = asyncio.get_event_loop()
 
+        self._ipv6_address = ipv6_address
         self._nickname = nickname
         self._nickname_iteration = 0
         self._joined = False
@@ -76,8 +78,15 @@ class IRCPuppet(irc.client_aio.AioSimpleIRCClient):
             return
 
     async def connect(self, host, port):
-        self._log.info("Connecting to IRC ...")
-        await self.connection.connect(host, port, self._nickname, connect_factory=irc.connection.AioFactory(ssl=True))
+        self._log.info("Connecting to IRC from %s ...", self._ipv6_address)
+        local_addr = (str(self._ipv6_address), 0)
+        # We force an IPv6 connection, as we need that for the puppet source address.
+        await self.connection.connect(
+            host,
+            port,
+            self._nickname,
+            connect_factory=irc.connection.AioFactory(family=socket.AF_INET6, local_addr=local_addr, ssl=True),
+        )
 
     async def send_message(self, content):
         await self._connected_event.wait()
