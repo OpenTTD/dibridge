@@ -19,7 +19,7 @@ jaraco.stream==3.0.3
 jaraco.text==3.8.1
 more-itertools==8.14.0
 multidict==6.0.2
-openttd-helpers==1.0.1
+openttd-helpers==1.1.0
 pytz==2022.1
 sentry-sdk==1.9.3
 tempora==5.0.2
