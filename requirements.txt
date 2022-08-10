@@ -17,7 +17,7 @@ jaraco.functools==3.5.1
 jaraco.logging==3.1.0
 jaraco.stream==3.0.3
 jaraco.text==3.8.1
-more-itertools==8.13.0
+more-itertools==8.14.0
 multidict==6.0.2
 openttd-helpers==1.0.1
 pytz==2022.1
