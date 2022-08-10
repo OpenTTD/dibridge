@@ -152,4 +152,4 @@ class RelayDiscord(discord.Client):
 
 def start(token, channel_id):
     relay.DISCORD = RelayDiscord(channel_id)
-    relay.DISCORD.run(token)
+    relay.DISCORD.run(token, log_handler=None)
