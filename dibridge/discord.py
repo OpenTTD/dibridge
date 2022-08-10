@@ -111,6 +111,11 @@ class RelayDiscord(discord.Client):
             relay.IRC.send_action(message.author.id, message.author.name, content[1:-1])
         else:
             for full_line in content.split("\n"):
+                # On Discord, you make code-blocks by starting and finishing with ```.
+                # This is considered noise on IRC however. So we ignore those lines.
+                if full_line == "```":
+                    continue
+
                 # Split the message in lines of at most 470 characters, breaking on words.
                 for line in textwrap.wrap(full_line.strip(), 470):
                     relay.IRC.send_message(message.author.id, message.author.name, line)
