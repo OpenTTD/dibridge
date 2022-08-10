@@ -1,5 +1,6 @@
 import asyncio
 import irc.client_aio
+import hashlib
 import logging
 import re
 import sys
@@ -12,7 +13,7 @@ log = logging.getLogger(__name__)
 
 
 class IRCRelay(irc.client_aio.AioSimpleIRCClient):
-    def __init__(self, host, port, nickname, channel, single_presence):
+    def __init__(self, host, port, nickname, channel, puppet_ip_range):
         irc.client.SimpleIRCClient.__init__(self)
 
         self._loop = asyncio.get_event_loop()
@@ -23,7 +24,7 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
         self._joined = False
         self._tell_once = True
         self._channel = channel
-        self._single_presence = single_presence
+        self._puppet_ip_range = puppet_ip_range
 
         # List of users when they have last spoken.
         self._users_spoken = {}
@@ -107,14 +108,17 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
                 )
             return
 
-        if self._single_presence:
+        if not self._puppet_ip_range:
             if is_action:
                 message = f"/me {message}"
             self._client.privmsg(self._channel, f"<{discord_username}>: {message}")
             return
 
         if discord_id not in self._puppets:
-            self._puppets[discord_id] = IRCPuppet(self._sanitize_discord_username(discord_username), self._channel)
+            sanitized_discord_username = self._sanitize_discord_username(discord_username)
+            ipv6_address = self._puppet_ip_range[self._generate_ipv6_bits(sanitized_discord_username)]
+
+            self._puppets[discord_id] = IRCPuppet(ipv6_address, sanitized_discord_username, self._channel)
             asyncio.create_task(self._puppets[discord_id].connect(self._host, self._port))
 
         if is_action:
@@ -149,6 +153,14 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
         discord_username = discord_username[:20]
         return discord_username
 
+    def _generate_ipv6_bits(self, discord_username):
+        # Based on the Discord username, generate 48 bits to add to the IPv6 address.
+        # This way we do not have to persistently store any information, but every user
+        # will always have the same IPv6.
+        # For the 48 bits, we simply take the first 48 bits from the SHA-256 hash of the
+        # username. Chances on collision are really low.
+        return int(hashlib.sha256(discord_username.encode("utf-8")).hexdigest(), 16) % (1 << 48)
+
     async def _stop(self):
         sys.exit(1)
 
@@ -172,10 +184,10 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
         asyncio.run_coroutine_threadsafe(self._stop(), self._loop)
 
 
-def start(host, port, name, channel, single_presence):
+def start(host, port, name, channel, puppet_ip_range):
     asyncio.set_event_loop(asyncio.new_event_loop())
 
-    relay.IRC = IRCRelay(host, port, name, channel, single_presence)
+    relay.IRC = IRCRelay(host, port, name, channel, puppet_ip_range)
 
     log.info("Connecting to IRC ...")
     asyncio.get_event_loop().run_until_complete(relay.IRC._connect())
