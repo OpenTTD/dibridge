@@ -12,6 +12,7 @@ class IRCPuppet(irc.client_aio.AioSimpleIRCClient):
 
         self._ipv6_address = ipv6_address
         self._nickname = nickname
+        self._nickname_original = nickname
         self._nickname_iteration = 0
         self._joined = False
         self._channel = channel
@@ -24,13 +25,13 @@ class IRCPuppet(irc.client_aio.AioSimpleIRCClient):
     def on_nicknameinuse(self, client, event):
         # First iteration, try adding a [d] (Discord, get it?).
         if self._nickname_iteration == 0:
-            self._nickname = f"{self._nickname}[d]"
+            self._nickname = f"{self._nickname_original}[d]"
             self._nickname_iteration += 1
             client.nick(self._nickname)
             return
 
         # [d] is already in use, try adding a [1], [2], ..
-        self._nickname = f"{self._nickname[:-3]}[{self._nickname_iteration}]"
+        self._nickname = f"{self._nickname_original}[{self._nickname_iteration}]"
         self._nickname_iteration += 1
         client.nick(self._nickname)
 
@@ -63,6 +64,15 @@ class IRCPuppet(irc.client_aio.AioSimpleIRCClient):
             return
         self._left(event.arguments[0])
 
+    def on_nick(self, client, event):
+        if event.source.nick == self._nickname:
+            # Sometimes happens on a netsplit, or when a username is GHOSTed.
+            # Most of the time the name is now something like Guest12345.
+            # Try changing back to a name more in line with the user-name.
+            self._log.info("Nickname changed to '%s' by server; trying to change it back", event.target)
+            self._nickname = event.target
+            asyncio.create_task(self.reclaim_nick())
+
     def on_disconnect(self, _client, event):
         self._log.error("Disconnected from IRC: %s", event.arguments[0])
         self._joined = False
@@ -76,6 +86,16 @@ class IRCPuppet(irc.client_aio.AioSimpleIRCClient):
             self._connected_event.clear()
             self._client.join(self._channel)
             return
+
+    async def reclaim_nick(self):
+        # We sleep for a second, as it turns out, if we are quick enough to change
+        # our name back, we win from people trying to reclaim their nick. Not the
+        # nicest thing to do.
+        await asyncio.sleep(1)
+
+        self._nickname = self._nickname_original
+        self._nickname_iteration = 0
+        self._client.nick(self._nickname)
 
     async def connect(self, host, port):
         self._log.info("Connecting to IRC from %s ...", self._ipv6_address)
