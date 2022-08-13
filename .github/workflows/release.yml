@@ -13,21 +13,19 @@ jobs:
     name: Publish image
     uses: OpenTTD/actions/.github/workflows/publish-image.yml@v3
 
-  # Currently this project is not deployed yet.
-  # deploy:
-  #   name: Deploy
-  #   needs:
-  #   - publish_image
+  deploy:
+    name: Deploy
+    needs:
+    - publish_image
 
-  #   uses: OpenTTD/actions/.github/workflows/aws-deployment.yml@v3
-  #   with:
-  #     is_staging: ${{ github.ref == 'refs/heads/main' }}
-  #     name: Dibridge
-  #     url_production: https://weblogs.openttd.org
-  #     url_staging: https://weblogs-staging.openttd.org
-  #     digest: ${{ needs.publish_image.outputs.digest }}
-  #     version: ${{ needs.publish_image.outputs.version }}
-  #   secrets:
-  #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #     AWS_REGION: ${{ secrets.AWS_REGION }}
-  #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    uses: ./.github/workflows/deploy-aws.yml
+    with:
+      is_staging: ${{ github.ref == 'refs/heads/main' }}
+      name: Relay
+      cluster: Relay
+      digest: ${{ needs.publish_image.outputs.digest }}
+      version: ${{ needs.publish_image.outputs.version }}
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
