@@ -25,6 +25,17 @@ class RelayDiscord(discord.Client):
         super().__init__(intents=intents, allowed_mentions=allowed_mentions)
 
         self._channel_id = channel_id
+        self._commands = discord.app_commands.CommandTree(self)
+
+        # Rebind the commands to the current client.
+        self.command_status.binding = self
+
+        # Add the commands we are listening too.
+        self._commands.add_command(self.command_status)
+
+    async def setup_hook(self):
+        # Sync the commands, so Discord knows about them too.
+        await self._commands.sync()
 
     async def on_ready(self):
         # Check if we have access to the channel.
@@ -122,6 +133,13 @@ class RelayDiscord(discord.Client):
 
     async def on_error(self, event, *args, **kwargs):
         log.exception("on_error(%s): %r / %r", event, args, kwargs)
+
+    @discord.app_commands.command(name="status", description="Get the status of the bridge")
+    async def command_status(self, interaction: discord.Interaction):
+        status = f":green_circle: **Discord** listening in <#{self._channel_id}>\n"
+        status += relay.IRC.get_status()
+
+        await interaction.response.send_message(status, ephemeral=True)
 
     async def _send_message(self, irc_username, message):
         await self._channel_webhook.send(

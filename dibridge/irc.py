@@ -166,6 +166,21 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
 
     # Thread safe wrapper around functions
 
+    def get_status(self):
+        if self._joined:
+            status = f":green_circle: **IRC** listening on `{self._host}` in `{self._channel}`\n"
+        else:
+            status = ":red_circle: **IRC** not connected\n"
+        if self._puppets:
+            status += "\n"
+            status += "IRC connections:\n"
+            for discord_id, puppet in self._puppets.items():
+                if puppet._joined:
+                    status += f"- :green_circle: <@{discord_id}> connected as `{puppet._nickname}`\n"
+                else:
+                    status += f"- :orange_circle: <@{discord_id}> connecting as `{puppet._nickname}`\n"
+        return status
+
     def get_irc_username(self, discord_id, discord_username):
         if discord_id not in self._puppets:
             return self._sanitize_discord_username(discord_username)
