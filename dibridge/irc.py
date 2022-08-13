@@ -21,6 +21,8 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
         self._host = host
         self._port = port
         self._nickname = nickname
+        self._nickname_original = nickname
+        self._nickname_iteration = 0
         self._joined = False
         self._tell_once = True
         self._channel = channel
@@ -31,9 +33,11 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
 
         self._puppets = {}
 
-    def on_nicknameinuse(self, _, event):
-        log.error("Nickname already in use: %r", event)
-        # TODO -- Pick another name
+    def on_nicknameinuse(self, client, event):
+        # Nickname is already in use, start adding numbers at the end to fix that.
+        self._nickname_iteration += 1
+        self._nickname = f"{self._nickname_original}[{self._nickname_iteration}]"
+        client.nick(self._nickname)
 
     def on_welcome(self, client, event):
         self._client = client
