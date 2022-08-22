@@ -141,7 +141,7 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
                 message = f"<@{discord_id}> " + message[len(f"{puppet._nickname}: ") :]
 
             # If the username is said as its own word, replace it with a Discord highlight.
-            message = re.sub(r"(?<!\w)" + puppet._nickname + r"(?!\w)", f"<@{discord_id}>", message)
+            message = re.sub(r"(?<!\w)" + re.escape(puppet._nickname) + r"(?!\w)", f"<@{discord_id}>", message)
 
         self._users_spoken[irc_username] = time.time()
         relay.DISCORD.send_message(irc_username, message)
