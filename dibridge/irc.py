@@ -95,7 +95,7 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
         # If the user spoken recently, show on Discord the user left.
         if self._users_spoken.get(nick, 0) > time.time() - 60 * 10:
             self._users_spoken.pop(nick)
-            relay.DISCORD.send_message(nick, "/me left the IRC channel")
+            relay.DISCORD.send_message(nick, "_left the IRC channel_")
 
     async def _connect(self):
         await self.connection.connect(
