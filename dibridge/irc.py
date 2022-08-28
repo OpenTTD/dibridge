@@ -81,9 +81,11 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
         self._left(event.arguments[0])
 
     def on_disconnect(self, _client, event):
-        log.error("Disconnected from IRC: %s", event.arguments[0])
+        log.error("Disconnected from IRC")
         self._joined = False
-        # The library will reconnect us.
+
+        # Start a task to reconnect us.
+        asyncio.create_task(self._connect())
 
     def _left(self, nick):
         # If we left the channel, rejoin.
@@ -98,9 +100,19 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
             relay.DISCORD.send_message(nick, "_left the IRC channel_")
 
     async def _connect(self):
-        await self.connection.connect(
-            self._host, self._port, self._nickname, connect_factory=irc.connection.AioFactory(ssl=True)
-        )
+        while True:
+            try:
+                await self.connection.connect(
+                    self._host,
+                    self._port,
+                    self._nickname,
+                    connect_factory=irc.connection.AioFactory(ssl=self._port == 6697),
+                )
+                break
+            except ConnectionRefusedError:
+                log.warning("Connection refused, retrying in 5 seconds")
+                # When we can't connect, try again in 5 seconds.
+                await asyncio.sleep(5)
 
     async def _send_message(self, discord_id, discord_username, message, is_action=False):
         # If we aren't connected to IRC yet, tell this to the Discord users; but only once.
@@ -122,8 +134,10 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
             sanitized_discord_username = self._sanitize_discord_username(discord_username)
             ipv6_address = self._puppet_ip_range[self._generate_ipv6_bits(sanitized_discord_username)]
 
-            self._puppets[discord_id] = IRCPuppet(ipv6_address, sanitized_discord_username, self._channel)
-            asyncio.create_task(self._puppets[discord_id].connect(self._host, self._port))
+            self._puppets[discord_id] = IRCPuppet(
+                self._host, self._port, ipv6_address, sanitized_discord_username, self._channel
+            )
+            asyncio.create_task(self._puppets[discord_id].connect())
 
         if is_action:
             await self._puppets[discord_id].send_action(message)

@@ -5,11 +5,13 @@ import socket
 
 
 class IRCPuppet(irc.client_aio.AioSimpleIRCClient):
-    def __init__(self, ipv6_address, nickname, channel):
+    def __init__(self, irc_host, irc_port, ipv6_address, nickname, channel):
         irc.client.SimpleIRCClient.__init__(self)
 
         self.loop = asyncio.get_event_loop()
 
+        self._irc_host = irc_host
+        self._irc_port = irc_port
         self._ipv6_address = ipv6_address
         self._nickname = nickname
         self._nickname_original = nickname
@@ -74,10 +76,12 @@ class IRCPuppet(irc.client_aio.AioSimpleIRCClient):
             asyncio.create_task(self.reclaim_nick())
 
     def on_disconnect(self, _client, event):
-        self._log.error("Disconnected from IRC: %s", event.arguments[0])
+        self._log.warning("Disconnected from IRC")
         self._joined = False
         self._connected_event.clear()
-        # The library will reconnect us.
+
+        # Start a task to reconnect us.
+        asyncio.create_task(self.connect())
 
     def _left(self, nick):
         # If we left the channel, rejoin.
@@ -97,16 +101,27 @@ class IRCPuppet(irc.client_aio.AioSimpleIRCClient):
         self._nickname_iteration = 0
         self._client.nick(self._nickname)
 
-    async def connect(self, host, port):
+    async def connect(self):
         self._log.info("Connecting to IRC from %s ...", self._ipv6_address)
+
         local_addr = (str(self._ipv6_address), 0)
-        # We force an IPv6 connection, as we need that for the puppet source address.
-        await self.connection.connect(
-            host,
-            port,
-            self._nickname,
-            connect_factory=irc.connection.AioFactory(family=socket.AF_INET6, local_addr=local_addr, ssl=True),
-        )
+
+        while True:
+            try:
+                await self.connection.connect(
+                    self._irc_host,
+                    self._irc_port,
+                    self._nickname,
+                    # We force an IPv6 connection, as we need that for the puppet source address.
+                    connect_factory=irc.connection.AioFactory(
+                        family=socket.AF_INET6, local_addr=local_addr, ssl=self._irc_port == 6697
+                    ),
+                )
+                break
+            except ConnectionRefusedError:
+                self._log.warning("Connection refused, retrying in 5 seconds")
+                # When we can't connect, try again in 5 seconds.
+                await asyncio.sleep(5)
 
     async def send_message(self, content):
         await self._connected_event.wait()
