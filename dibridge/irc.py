@@ -156,17 +156,24 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
             await self._puppets[discord_id].send_message(message)
 
     async def _relay_mesage(self, irc_username, message):
-        # Don't echo back talk done by our puppets.
         for discord_id, puppet in self._puppets.items():
+            # Don't echo back talk done by our puppets.
             if puppet._nickname == irc_username:
                 return
 
-            # On IRC, it is common to do "name: ", but on Discord you don't do that ": " part.
-            if message.startswith(f"{puppet._nickname}: "):
-                message = f"<@{discord_id}> " + message[len(f"{puppet._nickname}: ") :]
-
             # If the username is said as its own word, replace it with a Discord highlight.
-            message = re.sub(r"(?<!\w)" + re.escape(puppet._nickname) + r"(?!\w)", f"<@{discord_id}>", message)
+            message = " ".join(
+                [
+                    re.sub(r"(?<!\w)" + re.escape(puppet._nickname) + r"(?!\w)", f"<@{discord_id}>", part)
+                    if "://" not in part
+                    else part
+                    for part in message.split(" ")
+                ]
+            )
+
+            # On IRC, it is common to do "name: ", but on Discord you don't do that ": " part.
+            if message.startswith(f"<@{discord_id}>: "):
+                message = f"<@{discord_id}> " + message[len(f"<@{discord_id}>: ") :]
 
         self._users_spoken[irc_username] = time.time()
         relay.DISCORD.send_message(irc_username, message)
