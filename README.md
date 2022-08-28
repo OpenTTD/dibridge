@@ -96,7 +96,7 @@ Next, you need to make sure that this prefix is forwarded to the machine you are
 For example:
 ```bash
 ip route add local ${prefix} dev eth0
-ip a add local ${prefix} dev eth0
+ip addr add local ${prefix} dev eth0
 ```
 
 Where `${prefix}` is something like `2001:db8::/80`.
@@ -114,7 +114,6 @@ IRC puppets will now use an IP in that range.
 And don't worry, the same Discord user will always get the same IPv6 (given the range stays the same).
 So if they get banned on IRC, they are done.
 
-
 ## Development
 
 ```bash
@@ -122,6 +121,29 @@ python3 -m venv .env
 .env/bin/pip install -r requirements.txt
 .env/bin/python -m dibridge --help
 ```
+
+### IRC server
+
+To run a local IRC server to test with, one could do that with the following Docker statement:
+
+```bash
+docker run --rm --name irc --net=host -p 6667:6667 hatamiarash7/irc-server --nofork --debug
+```
+
+The `--net=host` is useful in case you want to work with IRC Puppets.
+For example, one could add a local route for some random IPv6 addresses, and tell this bridge to use that to connect to the IRC server.
+A typical way of doing this would be:
+
+```bash
+sysctl -w net.ipv6.ip_nonlocal_bind=1
+ip route add local 2001:db8:100::/80 dev lo
+```
+
+(don't forget to use as `--irc-host` something that also resolves to a local IPv6, like `localhost`)
+
+### Discord bot
+
+To connect to Discord, one could register their own Discord bot, invite it to a private server, and create a dedicated channel for testing.
 
 ## Why yet-another-bridge
 
