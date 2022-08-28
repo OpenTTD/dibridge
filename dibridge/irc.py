@@ -27,6 +27,7 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
         self._tell_once = True
         self._channel = channel
         self._puppet_ip_range = puppet_ip_range
+        self._pinger_task = None
 
         # List of users when they have last spoken.
         self._users_spoken = {}
@@ -42,6 +43,10 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
     def on_welcome(self, client, event):
         self._client = client
         self._client.join(self._channel)
+
+        if self._pinger_task:
+            self._pinger_task.cancel()
+        self._pinger_task = asyncio.create_task(self._pinger())
 
     def on_privmsg(self, _, event):
         # TODO -- Consider relaying private messages too. Can be useful to identify with NickServ etc.
@@ -83,6 +88,7 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
     def on_disconnect(self, _client, event):
         log.error("Disconnected from IRC")
         self._joined = False
+        self._pinger_task.cancel()
 
         # Start a task to reconnect us.
         asyncio.create_task(self._connect())
@@ -98,6 +104,11 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
         if self._users_spoken.get(nick, 0) > time.time() - 60 * 10:
             self._users_spoken.pop(nick)
             relay.DISCORD.send_message(nick, "_left the IRC channel_")
+
+    async def _pinger(self):
+        while True:
+            await asyncio.sleep(120)
+            self._client.ping("keep-alive")
 
     async def _connect(self):
         while True:
