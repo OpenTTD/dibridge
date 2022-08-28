@@ -4,8 +4,14 @@ import logging
 import socket
 
 
+# How much time after a user goes offline that the puppet disconnects from IRC.
+# If a user talks while invisible (which appears as offline), it is the same amount
+# of time after they last spoke.
+IDLE_TIMEOUT = 60 * 60 * 3
+
+
 class IRCPuppet(irc.client_aio.AioSimpleIRCClient):
-    def __init__(self, irc_host, irc_port, ipv6_address, nickname, channel):
+    def __init__(self, irc_host, irc_port, ipv6_address, nickname, channel, remove_puppet_func):
         irc.client.SimpleIRCClient.__init__(self)
 
         self.loop = asyncio.get_event_loop()
@@ -19,6 +25,9 @@ class IRCPuppet(irc.client_aio.AioSimpleIRCClient):
         self._joined = False
         self._channel = channel
         self._pinger_task = None
+        self._remove_puppet_func = remove_puppet_func
+        self._idle_task = None
+        self._reconnect = True
 
         self._connected_event = asyncio.Event()
         self._connected_event.clear()
@@ -86,8 +95,9 @@ class IRCPuppet(irc.client_aio.AioSimpleIRCClient):
         self._connected_event.clear()
         self._pinger_task.cancel()
 
-        # Start a task to reconnect us.
-        asyncio.create_task(self.connect())
+        if self._reconnect:
+            # Start a task to reconnect us.
+            asyncio.create_task(self.connect())
 
     def _left(self, nick):
         # If we left the channel, rejoin.
@@ -101,6 +111,13 @@ class IRCPuppet(irc.client_aio.AioSimpleIRCClient):
         while True:
             await asyncio.sleep(120)
             self._client.ping("keep-alive")
+
+    async def _idle_timeout(self):
+        await asyncio.sleep(IDLE_TIMEOUT)
+
+        self._reconnect = False
+        self._client.disconnect("Client went offline on Discord a while back")
+        await self._remove_puppet_func()
 
     async def reclaim_nick(self):
         # We sleep for a second, as it turns out, if we are quick enough to change
@@ -117,7 +134,7 @@ class IRCPuppet(irc.client_aio.AioSimpleIRCClient):
 
         local_addr = (str(self._ipv6_address), 0)
 
-        while True:
+        while self._reconnect:
             try:
                 await self.connection.connect(
                     self._irc_host,
@@ -134,10 +151,36 @@ class IRCPuppet(irc.client_aio.AioSimpleIRCClient):
                 # When we can't connect, try again in 5 seconds.
                 await asyncio.sleep(5)
 
+    async def start_idle_timeout(self):
+        await self.stop_idle_timeout()
+        self._idle_task = asyncio.create_task(self._idle_timeout())
+
+    async def stop_idle_timeout(self):
+        if not self._idle_task:
+            return
+
+        self._idle_task.cancel()
+        self._idle_task = None
+
+    async def _reset_idle_timeout(self):
+        if not self._idle_task:
+            return
+
+        # User is talking while appearing offline. Constantly reset the idle timeout.
+        await self.stop_idle_timeout()
+        await self.start_idle_timeout()
+
+    def is_offline(self):
+        return self._idle_task is not None
+
     async def send_message(self, content):
+        await self._reset_idle_timeout()
+
         await self._connected_event.wait()
         self._client.privmsg(self._channel, content)
 
     async def send_action(self, content):
+        await self._reset_idle_timeout()
+
         await self._connected_event.wait()
         self._client.action(self._channel, content)
