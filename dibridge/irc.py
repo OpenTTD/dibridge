@@ -68,7 +68,7 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
             self._joined = True
             self._tell_once = True
 
-            relay.DISCORD.update_presence("#openttd on IRC")
+            relay.DISCORD.update_presence(f"{self._channel} on IRC")
 
     def on_part(self, _client, event):
         if event.target != self._channel:

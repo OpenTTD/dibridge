@@ -24,6 +24,7 @@ class RelayDiscord(discord.Client):
         allowed_mentions.users = True
         super().__init__(intents=intents, allowed_mentions=allowed_mentions)
 
+        self._status = None
         self._channel_id = channel_id
         self._commands = discord.app_commands.CommandTree(self)
 
@@ -54,6 +55,9 @@ class RelayDiscord(discord.Client):
             self._channel_webhook = await self._channel.create_webhook(
                 name="ircbridge", reason="To bridge IRC messages to Discord"
             )
+
+        if self._status:
+            await self._update_presence(self._status)
 
         log.info("Logged on to Discord as '%s'", self.user)
 
@@ -153,6 +157,7 @@ class RelayDiscord(discord.Client):
         await self._channel.send(message)
 
     async def _update_presence(self, status):
+        self._status = status
         await self.change_presence(
             activity=discord.Activity(type=discord.ActivityType.watching, name=status),
             status=discord.Status.online,
