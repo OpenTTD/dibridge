@@ -18,6 +18,7 @@ class IRCPuppet(irc.client_aio.AioSimpleIRCClient):
         self._nickname_iteration = 0
         self._joined = False
         self._channel = channel
+        self._pinger_task = None
 
         self._connected_event = asyncio.Event()
         self._connected_event.clear()
@@ -40,6 +41,10 @@ class IRCPuppet(irc.client_aio.AioSimpleIRCClient):
     def on_welcome(self, client, event):
         self._client = client
         self._client.join(self._channel)
+
+        if self._pinger_task:
+            self._pinger_task.cancel()
+        self._pinger_task = asyncio.create_task(self._pinger())
 
     def on_privmsg(self, _, event):
         # TODO -- Consider relaying private messages too. Can be useful to identify with NickServ etc.
@@ -79,6 +84,7 @@ class IRCPuppet(irc.client_aio.AioSimpleIRCClient):
         self._log.warning("Disconnected from IRC")
         self._joined = False
         self._connected_event.clear()
+        self._pinger_task.cancel()
 
         # Start a task to reconnect us.
         asyncio.create_task(self.connect())
@@ -90,6 +96,11 @@ class IRCPuppet(irc.client_aio.AioSimpleIRCClient):
             self._connected_event.clear()
             self._client.join(self._channel)
             return
+
+    async def _pinger(self):
+        while True:
+            await asyncio.sleep(120)
+            self._client.ping("keep-alive")
 
     async def reclaim_nick(self):
         # We sleep for a second, as it turns out, if we are quick enough to change
