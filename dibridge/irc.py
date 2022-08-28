@@ -1,5 +1,6 @@
 import asyncio
 import irc.client_aio
+import functools
 import hashlib
 import logging
 import re
@@ -11,9 +12,14 @@ from . import relay
 
 log = logging.getLogger(__name__)
 
+# When a user on IRC was talking but left within 10 minutes, announce
+# this on Discord. This to prevent Discord users thinking they can still
+# talk to someone if they are in an active conversation with them.
+LEFT_WHILE_TALKING_TIMEOUT = 60 * 10
+
 
 class IRCRelay(irc.client_aio.AioSimpleIRCClient):
-    def __init__(self, host, port, nickname, channel, puppet_ip_range, ignore_list):
+    def __init__(self, host, port, nickname, channel, puppet_ip_range, ignore_list, idle_timeout):
         irc.client.SimpleIRCClient.__init__(self)
 
         self._loop = asyncio.get_event_loop()
@@ -29,6 +35,7 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
         self._puppet_ip_range = puppet_ip_range
         self._pinger_task = None
         self._ignore_list = ignore_list
+        self._idle_timeout = idle_timeout
 
         # List of users when they have last spoken.
         self._users_spoken = {}
@@ -104,7 +111,7 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
             return
 
         # If the user spoken recently, show on Discord the user left.
-        if self._users_spoken.get(nick, 0) > time.time() - 60 * 10:
+        if self._users_spoken.get(nick, 0) > time.time() - LEFT_WHILE_TALKING_TIMEOUT:
             self._users_spoken.pop(nick)
             relay.DISCORD.send_message(nick, "_left the IRC channel_")
 
@@ -149,7 +156,13 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
             ipv6_address = self._puppet_ip_range[self._generate_ipv6_bits(sanitized_discord_username)]
 
             self._puppets[discord_id] = IRCPuppet(
-                self._host, self._port, ipv6_address, sanitized_discord_username, self._channel
+                self._host,
+                self._port,
+                ipv6_address,
+                sanitized_discord_username,
+                self._channel,
+                functools.partial(self._remove_puppet, discord_id),
+                self._idle_timeout,
             )
             asyncio.create_task(self._puppets[discord_id].connect())
 
@@ -215,6 +228,9 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
     async def _stop(self):
         sys.exit(1)
 
+    async def _remove_puppet(self, discord_id):
+        self._puppets.pop(discord_id)
+
     # Thread safe wrapper around functions
 
     def get_status(self):
@@ -234,6 +250,20 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
 
         return self._puppets[discord_id]._nickname
 
+    def update_status(self, discord_id, is_offline):
+        if discord_id not in self._puppets:
+            return
+
+        if self._puppets[discord_id].is_offline() == is_offline:
+            return
+
+        if is_offline:
+            # Start a timer to delete the puppet after timeout.
+            asyncio.run_coroutine_threadsafe(self._puppets[discord_id].start_idle_timeout(), self._loop)
+        else:
+            # Stop the timer if the user comes back.
+            asyncio.run_coroutine_threadsafe(self._puppets[discord_id].stop_idle_timeout(), self._loop)
+
     def send_message(self, discord_id, discord_username, message):
         asyncio.run_coroutine_threadsafe(self._send_message(discord_id, discord_username, message), self._loop)
 
@@ -246,10 +276,10 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
         asyncio.run_coroutine_threadsafe(self._stop(), self._loop)
 
 
-def start(host, port, name, channel, puppet_ip_range, ignore_list):
+def start(host, port, name, channel, puppet_ip_range, ignore_list, idle_timeout):
     asyncio.set_event_loop(asyncio.new_event_loop())
 
-    relay.IRC = IRCRelay(host, port, name, channel, puppet_ip_range, ignore_list)
+    relay.IRC = IRCRelay(host, port, name, channel, puppet_ip_range, ignore_list, idle_timeout)
 
     log.info("Connecting to IRC ...")
     asyncio.get_event_loop().run_until_complete(relay.IRC._connect())
