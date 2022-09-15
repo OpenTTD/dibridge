@@ -3,7 +3,7 @@ aiosignal==1.2.0
 async-timeout==4.0.2
 attrs==22.1.0
 autocommand==2.2.1
-certifi==2022.6.15
+certifi==2022.9.14
 chardet==5.0.0
 charset-normalizer==2.1.1
 click==8.1.3
