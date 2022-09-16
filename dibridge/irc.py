@@ -190,7 +190,7 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
         # On Discord you can create usernames that don't contain any character valid
         # on IRC, leaving an empty username. In that case we have no option but to
         # replace it with a default placeholder. To make sure the names are somewhat
-        # stable over multiple runs, we user a partial of the MD5 of the original
+        # stable over multiple runs, we use a partial of the SHA256 of the original
         # discord name. It is not perfect, but at least it is better than nothing.
         if discord_username == "":
             postfix = hashlib.sha256(original_discord_username.encode()).hexdigest()
