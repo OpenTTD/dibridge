@@ -179,11 +179,23 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
         relay.DISCORD.send_message(irc_username, message)
 
     def _sanitize_discord_username(self, discord_username):
+        original_discord_username = discord_username
+
         discord_username = discord_username.strip()
         # Remove all characters not allowed in IRC usernames.
         discord_username = re.sub(r"[^a-zA-Z0-9_\-\[\]\{\}\|]", "", discord_username)
         # Make sure a username doesn't start with a number or "-".
         discord_username = re.sub(r"^[0-9\-]", "", discord_username)
+
+        # On Discord you can create usernames that don't contain any character valid
+        # on IRC, leaving an empty username. In that case we have no option but to
+        # replace it with a default placeholder. To make sure the names are somewhat
+        # stable over multiple runs, we user a partial of the MD5 of the original
+        # discord name. It is not perfect, but at least it is better than nothing.
+        if discord_username == "":
+            postfix = hashlib.sha256(original_discord_username.encode()).hexdigest()
+            discord_username = f"discord_user_{postfix[0:8]}"
+
         # Make sure a username is no more than 20 character.
         # Depending on the IRC network, different lengths are allowed.
         discord_username = discord_username[:20]
