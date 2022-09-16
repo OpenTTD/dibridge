@@ -84,7 +84,8 @@ class IRCPuppet(irc.client_aio.AioSimpleIRCClient):
         self._log.warning("Disconnected from IRC")
         self._joined = False
         self._connected_event.clear()
-        self._pinger_task.cancel()
+        if self._pinger_task:
+            self._pinger_task.cancel()
 
         # Start a task to reconnect us.
         asyncio.create_task(self.connect())
