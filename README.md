@@ -54,13 +54,15 @@ Usage: python -m dibridge [OPTIONS]
 Options:
   --sentry-dsn TEXT             Sentry DSN.
   --sentry-environment TEXT     Environment we are running in.
-  --discord-token TEXT          Discord bot token to authenticate  [required]
-  --discord-channel-id INTEGER  Discord channel ID to relay to  [required]
-  --irc-host TEXT               IRC host to connect to  [required]
-  --irc-port INTEGER            IRC SSL port to connect to
-  --irc-nick TEXT               IRC nick to use  [required]
-  --irc-channel TEXT            IRC channel to relay to  [required]
-  --irc-puppet-ip-range TEXT    An IPv6 CIDR range to use for IRC puppets
+  --discord-token TEXT          Discord bot token to authenticate.  [required]
+  --discord-channel-id INTEGER  Discord channel ID to relay to.  [required]
+  --irc-host TEXT               IRC host to connect to.  [required]
+  --irc-port INTEGER            IRC SSL port to connect to.
+  --irc-nick TEXT               IRC nick to use.  [required]
+  --irc-channel TEXT            IRC channel to relay to, without the first
+                                '#'.  [required]
+  --irc-puppet-ip-range TEXT    An IPv6 CIDR range to use for IRC puppets.
+                                (2001:A:B:C:D::/80)
   -h, --help                    Show this message and exit.
 ```
 

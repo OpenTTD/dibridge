@@ -21,7 +21,7 @@ log = logging.getLogger(__name__)
 @click.option("--irc-host", help="IRC host to connect to.", required=True)
 @click.option("--irc-port", help="IRC SSL port to connect to.", default=6697, type=int)
 @click.option("--irc-nick", help="IRC nick to use.", required=True)
-@click.option("--irc-channel", help="IRC channel to relay to.", required=True)
+@click.option("--irc-channel", help="IRC channel to relay to, without the first '#'.", required=True)
 @click.option("--irc-puppet-ip-range", help="An IPv6 CIDR range to use for IRC puppets. (2001:A:B:C:D::/80)")
 def main(discord_token, discord_channel_id, irc_host, irc_port, irc_nick, irc_channel, irc_puppet_ip_range):
     if irc_puppet_ip_range:
