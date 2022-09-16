@@ -70,6 +70,26 @@ You can also set environment variables instead of using the options.
 `DIBRIDGE_DISCORD_TOKEN` for example sets the `--discord-token`.
 It is strongly advised to use environment variables for secrets and tokens.
 
+### Discord bot
+
+This application logs in as a Discord bot to get a presence on Discord.
+You have to create this bot yourself, by going to https://discord.com/developers/ and registering one.
+The Discord token can be found under `Bot`.
+
+After creating a bot, you need to invite this bot to your Discord channel.
+If you are not the owner of that channel, you would need to make the bot `Public` before the admin can add it.
+The bot needs at least `Send Messages`, `Read Messages` and `Manage Webhooks` permissions to operate in a channel.
+
+Additionally, the bot uses the following intents:
+- `messages`: to read messages.
+- `guilds`: to read channel information.
+- `presences`: to know when a user goes offline.
+- `members`: to read member information.
+- `message_content`: to read message content.
+
+Some of these intents need additional permission on the bot's side, under `Privileged Gateway Intents`.
+Without those, this application will fail to start.
+
 ### IRC Puppet IP Range
 
 The more complicated setting in this row is `--irc-puppet-ip-range`, and needs some explaining.
