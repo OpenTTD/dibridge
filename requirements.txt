@@ -15,7 +15,7 @@ irc==20.1.0
 jaraco.classes==3.2.2
 jaraco.collections==3.5.2
 jaraco.context==4.1.2
-jaraco.functools==3.5.1
+jaraco.functools==3.5.2
 jaraco.logging==3.1.2
 jaraco.stream==3.0.3
 jaraco.text==3.9.1
