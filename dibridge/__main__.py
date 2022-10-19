@@ -23,6 +23,7 @@ log = logging.getLogger(__name__)
 @click.option("--irc-nick", help="IRC nick to use.", required=True)
 @click.option("--irc-channel", help="IRC channel to relay to, without the first '#'.", required=True)
 @click.option("--irc-puppet-ip-range", help="An IPv6 CIDR range to use for IRC puppets. (2001:A:B:C:D::/80)")
+@click.option("--irc-puppet-postfix", help="Postfix to add to IRC puppet nicknames (default: none).", default="")
 @click.option("--irc-ignore-list", help="IRC nicknames to not relay messages for (comma separated, case-insensitive).")
 @click.option(
     "--irc-idle-timeout",
@@ -38,6 +39,7 @@ def main(
     irc_nick,
     irc_channel,
     irc_puppet_ip_range,
+    irc_puppet_postfix,
     irc_ignore_list,
     irc_idle_timeout,
 ):
@@ -54,7 +56,16 @@ def main(
     thread_d = threading.Thread(target=discord.start, args=[discord_token, discord_channel_id])
     thread_i = threading.Thread(
         target=irc.start,
-        args=[irc_host, irc_port, irc_nick, f"#{irc_channel}", irc_puppet_ip_range, irc_ignore_list, irc_idle_timeout],
+        args=[
+            irc_host,
+            irc_port,
+            irc_nick,
+            f"#{irc_channel}",
+            irc_puppet_ip_range,
+            irc_puppet_postfix,
+            irc_ignore_list,
+            irc_idle_timeout,
+        ],
     )
 
     thread_d.start()

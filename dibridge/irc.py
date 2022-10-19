@@ -19,7 +19,7 @@ LEFT_WHILE_TALKING_TIMEOUT = 60 * 10
 
 
 class IRCRelay(irc.client_aio.AioSimpleIRCClient):
-    def __init__(self, host, port, nickname, channel, puppet_ip_range, ignore_list, idle_timeout):
+    def __init__(self, host, port, nickname, channel, puppet_ip_range, puppet_postfix, ignore_list, idle_timeout):
         irc.client.SimpleIRCClient.__init__(self)
 
         self._loop = asyncio.get_event_loop()
@@ -33,6 +33,7 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
         self._tell_once = True
         self._channel = channel
         self._puppet_ip_range = puppet_ip_range
+        self._puppet_postfix = puppet_postfix
         self._pinger_task = None
         self._ignore_list = ignore_list
         self._idle_timeout = idle_timeout
@@ -159,7 +160,7 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
                 self._host,
                 self._port,
                 ipv6_address,
-                sanitized_discord_username,
+                f"{sanitized_discord_username}{self._puppet_postfix}",
                 self._channel,
                 functools.partial(self._remove_puppet, discord_id),
                 self._idle_timeout,
@@ -276,10 +277,10 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
         asyncio.run_coroutine_threadsafe(self._stop(), self._loop)
 
 
-def start(host, port, name, channel, puppet_ip_range, ignore_list, idle_timeout):
+def start(host, port, name, channel, puppet_ip_range, puppet_postfix, ignore_list, idle_timeout):
     asyncio.set_event_loop(asyncio.new_event_loop())
 
-    relay.IRC = IRCRelay(host, port, name, channel, puppet_ip_range, ignore_list, idle_timeout)
+    relay.IRC = IRCRelay(host, port, name, channel, puppet_ip_range, puppet_postfix, ignore_list, idle_timeout)
 
     log.info("Connecting to IRC ...")
     asyncio.get_event_loop().run_until_complete(relay.IRC._connect())
