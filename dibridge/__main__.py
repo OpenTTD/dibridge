@@ -35,7 +35,7 @@ def main(
     if irc_ignore_list:
         irc_ignore_list = [nickname.strip().lower() for nickname in irc_ignore_list.split(",") if nickname.strip()]
     if not irc_ignore_list:
-        irc_ignore_list = None
+        irc_ignore_list = []
 
     thread_d = threading.Thread(target=discord.start, args=[discord_token, discord_channel_id])
     thread_i = threading.Thread(
