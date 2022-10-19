@@ -32,7 +32,7 @@ def main(
         if irc_puppet_ip_range.num_addresses < 2**48:
             raise Exception("--irc-puppet-ip-range needs to be an IPv6 CIDR range of at least /80 or more.")
 
-    if irc_ignore_list.strip():
+    if irc_ignore_list:
         irc_ignore_list = [nickname.strip().lower() for nickname in irc_ignore_list.split(",") if nickname.strip()]
     if not irc_ignore_list:
         irc_ignore_list = None
