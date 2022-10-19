@@ -16,7 +16,6 @@ If you want to bridge multiple, you will have to run more than one server.
 This software is currently in pre-alpha.
 Here is a list of things that still needs doing:
 
-- [ ] Disconnect IRC puppet if it hasn't seen activity for 7 days.
 - [ ] Set IRC status to away if user goes offline on Discord.
 - [ ] Show IRC joins if the user talked recently, left, but came back.
 - [ ] Investigate IRC private messages, if we can relay them to Discord and back.
