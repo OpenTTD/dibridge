@@ -65,6 +65,8 @@ Options:
                                 (2001:A:B:C:D::/80)
   --irc-ignore-list TEXT        IRC nicknames to not relay messages for (comma
                                 separated, case-insensitive).
+  --irc-idle_timeout INTEGER    IRC puppet idle timeout, in seconds (default:
+                                2 days).
   -h, --help                    Show this message and exit.
 ```
 

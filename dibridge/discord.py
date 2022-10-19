@@ -72,6 +72,8 @@ class RelayDiscord(discord.Client):
         if message.type not in (discord.MessageType.default, discord.MessageType.reply):
             return
 
+        relay.IRC.update_status(message.author.id, message.author.status == discord.Status.offline)
+
         content = message.content
 
         if message.type == discord.MessageType.reply:
@@ -134,6 +136,9 @@ class RelayDiscord(discord.Client):
                 # Split the message in lines of at most 470 characters, breaking on words.
                 for line in textwrap.wrap(full_line.strip(), 470):
                     relay.IRC.send_message(message.author.id, message.author.name, line)
+
+    async def on_presence_update(self, before, after):
+        relay.IRC.update_status(after.id, after.status == discord.Status.offline)
 
     async def on_error(self, event, *args, **kwargs):
         log.exception("on_error(%s): %r / %r", event, args, kwargs)
