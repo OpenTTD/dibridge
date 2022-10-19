@@ -220,13 +220,9 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
         else:
             status = ":red_circle: **IRC** not connected\n"
         if self._puppets:
+            joined = len([True for puppet in self._puppets.values() if puppet._joined])
             status += "\n"
-            status += "IRC connections:\n"
-            for discord_id, puppet in self._puppets.items():
-                if puppet._joined:
-                    status += f"- :green_circle: <@{discord_id}> connected as `{puppet._nickname}`\n"
-                else:
-                    status += f"- :orange_circle: <@{discord_id}> connecting as `{puppet._nickname}`\n"
+            status += f"**{len(self._puppets)}** IRC connections, **{joined}** connected\n"
         return status
 
     def get_irc_username(self, discord_id, discord_username):
