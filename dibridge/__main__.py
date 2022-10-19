@@ -23,15 +23,23 @@ log = logging.getLogger(__name__)
 @click.option("--irc-nick", help="IRC nick to use.", required=True)
 @click.option("--irc-channel", help="IRC channel to relay to, without the first '#'.", required=True)
 @click.option("--irc-puppet-ip-range", help="An IPv6 CIDR range to use for IRC puppets. (2001:A:B:C:D::/80)")
-def main(discord_token, discord_channel_id, irc_host, irc_port, irc_nick, irc_channel, irc_puppet_ip_range):
+@click.option("--irc-ignore-list", help="IRC nicknames to not relay messages for (comma separated, case-insensitive).")
+def main(
+    discord_token, discord_channel_id, irc_host, irc_port, irc_nick, irc_channel, irc_puppet_ip_range, irc_ignore_list
+):
     if irc_puppet_ip_range:
         irc_puppet_ip_range = ipaddress.ip_network(irc_puppet_ip_range)
         if irc_puppet_ip_range.num_addresses < 2**48:
             raise Exception("--irc-puppet-ip-range needs to be an IPv6 CIDR range of at least /80 or more.")
 
+    if irc_ignore_list.strip():
+        irc_ignore_list = [nickname.strip().lower() for nickname in irc_ignore_list.split(",") if nickname.strip()]
+    if not irc_ignore_list:
+        irc_ignore_list = None
+
     thread_d = threading.Thread(target=discord.start, args=[discord_token, discord_channel_id])
     thread_i = threading.Thread(
-        target=irc.start, args=[irc_host, irc_port, irc_nick, f"#{irc_channel}", irc_puppet_ip_range]
+        target=irc.start, args=[irc_host, irc_port, irc_nick, f"#{irc_channel}", irc_puppet_ip_range, irc_ignore_list]
     )
 
     thread_d.start()
