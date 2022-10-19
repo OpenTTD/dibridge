@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 
 class IRCRelay(irc.client_aio.AioSimpleIRCClient):
-    def __init__(self, host, port, nickname, channel, puppet_ip_range):
+    def __init__(self, host, port, nickname, channel, puppet_ip_range, irc_ignore_list):
         irc.client.SimpleIRCClient.__init__(self)
 
         self._loop = asyncio.get_event_loop()
@@ -28,6 +28,7 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
         self._channel = channel
         self._puppet_ip_range = puppet_ip_range
         self._pinger_task = None
+        self._irc_ignore_list = irc_ignore_list
 
         # List of users when they have last spoken.
         self._users_spoken = {}
@@ -54,6 +55,8 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
 
     def on_pubmsg(self, _, event):
         if event.target != self._channel:
+            return
+        if event.source.nick.lower() in self._irc_ignore_list:
             return
         asyncio.create_task(self._relay_mesage(event.source.nick, event.arguments[0]))
 
@@ -243,10 +246,10 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
         asyncio.run_coroutine_threadsafe(self._stop(), self._loop)
 
 
-def start(host, port, name, channel, puppet_ip_range):
+def start(host, port, name, channel, puppet_ip_range, irc_ignore_list):
     asyncio.set_event_loop(asyncio.new_event_loop())
 
-    relay.IRC = IRCRelay(host, port, name, channel, puppet_ip_range)
+    relay.IRC = IRCRelay(host, port, name, channel, puppet_ip_range, irc_ignore_list)
 
     log.info("Connecting to IRC ...")
     asyncio.get_event_loop().run_until_complete(relay.IRC._connect())
