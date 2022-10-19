@@ -63,6 +63,8 @@ Options:
                                 '#'.  [required]
   --irc-puppet-ip-range TEXT    An IPv6 CIDR range to use for IRC puppets.
                                 (2001:A:B:C:D::/80)
+  --irc-puppet-postfix TEXT     Postfix to add to IRC puppet nicknames
+                                (default: none).
   --irc-ignore-list TEXT        IRC nicknames to not relay messages for (comma
                                 separated, case-insensitive).
   --irc-idle_timeout INTEGER    IRC puppet idle timeout, in seconds (default:
