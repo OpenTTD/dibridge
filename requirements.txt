@@ -23,7 +23,7 @@ more-itertools==9.0.0
 multidict==6.0.2
 openttd-helpers==1.1.0
 pydantic==1.10.2
-pytz==2022.5
+pytz==2022.7
 sentry-sdk==1.9.10
 tempora==5.0.2
 typing_extensions==4.4.0
