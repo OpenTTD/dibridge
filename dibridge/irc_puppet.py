@@ -75,6 +75,14 @@ class IRCPuppet(irc.client_aio.AioSimpleIRCClient):
             return
         self._left(event.arguments[0])
 
+    def on_kill(self, _client, event):
+        # If a user is killed, the ops on IRC must have a good reason.
+        # So we disconnect the bridge on our side too.
+        self._log.info("Killed by server; removing puppet")
+
+        self._reconnect = False
+        asyncio.create_task(self._remove_puppet_func())
+
     def on_nick(self, client, event):
         if event.source.nick == self._nickname:
             # Sometimes happens on a netsplit, or when a username is GHOSTed.
