@@ -168,6 +168,8 @@ ip route add local 2001:db8:100::/80 dev lo
 
 (don't forget to use as `--irc-host` something that also resolves to a local IPv6, like `localhost`)
 
+By default, the `oper` is named `dusty` with as password `IAmDusty`.
+
 ### Discord bot
 
 To connect to Discord, one could register their own Discord bot, invite it to a private server, and create a dedicated channel for testing.
