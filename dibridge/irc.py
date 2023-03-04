@@ -96,6 +96,9 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
             return
         self._left(event.arguments[0])
 
+    def on_quit(self, _client, event):
+        self._left(event.source.nick)
+
     def on_disconnect(self, _client, event):
         log.error("Disconnected from IRC")
         self._joined = False
