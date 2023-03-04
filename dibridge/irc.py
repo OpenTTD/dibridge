@@ -7,6 +7,8 @@ import re
 import sys
 import time
 
+from openttd_helpers.asyncio_helper import enable_strong_referenced_tasks
+
 from .irc_puppet import IRCPuppet
 from . import relay
 
@@ -278,7 +280,9 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
 
 
 def start(host, port, name, channel, puppet_ip_range, puppet_postfix, ignore_list, idle_timeout):
-    asyncio.set_event_loop(asyncio.new_event_loop())
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    enable_strong_referenced_tasks(loop)
 
     relay.IRC = IRCRelay(host, port, name, channel, puppet_ip_range, puppet_postfix, ignore_list, idle_timeout)
 
