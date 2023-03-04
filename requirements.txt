@@ -25,7 +25,7 @@ openttd-helpers==1.1.0
 pydantic==1.10.3
 pytz==2022.7.1
 sentry-sdk==1.12.1
-tempora==5.1.0
+tempora==5.2.1
 typing_extensions==4.4.0
 urllib3==1.26.14
 yarl==1.8.2
