@@ -22,7 +22,7 @@ jaraco.text==3.11.1
 more-itertools==9.1.0
 multidict==6.0.4
 openttd-helpers==1.2.0
-pydantic==1.10.5
+pydantic==1.10.7
 pytz==2022.7.1
 sentry-sdk==1.16.0
 tempora==5.2.1
