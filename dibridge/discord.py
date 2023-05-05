@@ -9,6 +9,10 @@ from . import relay
 
 log = logging.getLogger(__name__)
 
+# The maximum length of a message on IRC. This is different per network,
+# but 400 seems like a safe value for most modern IRC networks.
+IRC_MAX_LINE_LENGTH = 400
+
 
 class RelayDiscord(discord.Client):
     def __init__(self, channel_id):
@@ -123,8 +127,13 @@ class RelayDiscord(discord.Client):
         content = content.replace("\r\n", "\n").replace("\r", "\n").strip()
 
         # On Discord text between _ and _ is what IRC calls an action.
-        # IRC allows messages of ~470 characters, so if the action is longer, make it a multi-line message instead.
-        if content.startswith("_") and content.endswith("_") and "\n" not in content and len(content) < 470:
+        # IRC has a limit on message size; if reached, make the action multi-line too.
+        if (
+            content.startswith("_")
+            and content.endswith("_")
+            and "\n" not in content
+            and len(content) < IRC_MAX_LINE_LENGTH
+        ):
             relay.IRC.send_action(message.author.id, message.author.name, content[1:-1])
         else:
             for full_line in content.split("\n"):
@@ -133,8 +142,8 @@ class RelayDiscord(discord.Client):
                 if full_line == "```":
                     continue
 
-                # Split the message in lines of at most 470 characters, breaking on words.
-                for line in textwrap.wrap(full_line.strip(), 470):
+                # Split the message in lines of at most IRC_MAX_LINE_LENGTH characters, breaking on words.
+                for line in textwrap.wrap(full_line.strip(), IRC_MAX_LINE_LENGTH):
                     relay.IRC.send_message(message.author.id, message.author.name, line)
 
     async def on_presence_update(self, before, after):
