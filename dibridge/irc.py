@@ -129,10 +129,16 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
     async def _connect(self):
         while True:
             try:
+                username = self._nickname
+                # An additional constraints usernames have over nicknames, that they are
+                # also not allowed to start with an underscore.
+                username = re.sub(r"^_+", "", username)
+
                 await self.connection.connect(
                     self._host,
                     self._port,
                     self._nickname,
+                    username=username,
                     connect_factory=irc.connection.AioFactory(ssl=self._port == 6697),
                 )
                 break
