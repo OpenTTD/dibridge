@@ -104,7 +104,8 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
     def on_disconnect(self, _client, event):
         log.error("Disconnected from IRC")
         self._joined = False
-        self._pinger_task.cancel()
+        if self._pinger_task:
+            self._pinger_task.cancel()
 
         # Start a task to reconnect us.
         asyncio.create_task(self._connect())
