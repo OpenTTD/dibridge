@@ -1,6 +1,7 @@
 import asyncio
 import irc.client_aio
 import logging
+import re
 import socket
 
 
@@ -139,11 +140,17 @@ class IRCPuppet(irc.client_aio.AioSimpleIRCClient):
         local_addr = (str(self._ipv6_address), 0)
 
         while self._reconnect:
+            username = self._nickname
+            # An additional constraints usernames have over nicknames, that they are
+            # also not allowed to start with an underscore.
+            username = re.sub(r"^_+", "", username)
+
             try:
                 await self.connection.connect(
                     self._irc_host,
                     self._irc_port,
                     self._nickname,
+                    username=username,
                     # We force an IPv6 connection, as we need that for the puppet source address.
                     connect_factory=irc.connection.AioFactory(
                         family=socket.AF_INET6, local_addr=local_addr, ssl=self._irc_port == 6697
