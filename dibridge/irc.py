@@ -19,6 +19,14 @@ log = logging.getLogger(__name__)
 # talk to someone if they are in an active conversation with them.
 LEFT_WHILE_TALKING_TIMEOUT = 60 * 10
 
+# By RFC, only these characters are allowed in a nickname.
+REGEX_NICKNAME_FILTER = r"[^a-zA-Z0-9_\-\[\]\{\}\|]"
+# By RFC, a nickname cannot start with a number or a dash.
+REGEX_NICKNAME_START_FILTER = r"^[0-9\-]+"
+# By implementation, a username is more strict than a nickname in what
+# it can start with. This filter is in addition to the nickname filters.
+REGEX_USERNAME_START_FILTER = r"^[_\[\]\{\}\|]+"
+
 
 class IRCRelay(irc.client_aio.AioSimpleIRCClient):
     def __init__(self, host, port, nickname, channel, puppet_ip_range, puppet_postfix, ignore_list, idle_timeout):
@@ -129,10 +137,8 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
 
     async def _connect(self):
         while True:
-            username = self._nickname
-            # An additional constraints usernames have over nicknames, that they are
-            # also not allowed to start with an underscore.
-            username = re.sub(r"^_+", "", username)
+            # Additional constraints usernames have over nicknames.
+            username = re.sub(REGEX_USERNAME_START_FILTER, "", self._nickname)
 
             try:
                 await self.connection.connect(
@@ -168,11 +174,15 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
             sanitized_discord_username = self._sanitize_discord_username(discord_username)
             ipv6_address = self._puppet_ip_range[self._generate_ipv6_bits(sanitized_discord_username)]
 
+            irc_nickname = f"{sanitized_discord_username}{self._puppet_postfix}"
+            irc_username = re.sub(REGEX_USERNAME_START_FILTER, "", irc_nickname)
+
             self._puppets[discord_id] = IRCPuppet(
                 self._host,
                 self._port,
                 ipv6_address,
-                f"{sanitized_discord_username}{self._puppet_postfix}",
+                irc_nickname,
+                irc_username,
                 self._channel,
                 functools.partial(self._remove_puppet, discord_id),
                 self._idle_timeout,
@@ -211,10 +221,10 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
         original_discord_username = discord_username
 
         discord_username = discord_username.strip()
-        # Remove all characters not allowed in IRC usernames.
-        discord_username = re.sub(r"[^a-zA-Z0-9_\-\[\]\{\}\|]", "", discord_username)
-        # Make sure a username doesn't start with a number or "-".
-        discord_username = re.sub(r"^[0-9\-]", "", discord_username)
+        # Remove all characters not allowed in IRC nicknames.
+        discord_username = re.sub(REGEX_NICKNAME_FILTER, "", discord_username)
+        # Make sure a nicknames doesn't start with an invalid character.
+        discord_username = re.sub(REGEX_NICKNAME_START_FILTER, "", discord_username)
 
         # On Discord you can create usernames that don't contain any character valid
         # on IRC, leaving an empty username. In that case we have no option but to

@@ -1,12 +1,11 @@
 import asyncio
 import irc.client_aio
 import logging
-import re
 import socket
 
 
 class IRCPuppet(irc.client_aio.AioSimpleIRCClient):
-    def __init__(self, irc_host, irc_port, ipv6_address, nickname, channel, remove_puppet_func, idle_timeout):
+    def __init__(self, irc_host, irc_port, ipv6_address, nickname, username, channel, remove_puppet_func, idle_timeout):
         irc.client.SimpleIRCClient.__init__(self)
 
         self.loop = asyncio.get_event_loop()
@@ -17,6 +16,7 @@ class IRCPuppet(irc.client_aio.AioSimpleIRCClient):
         self._nickname = nickname
         self._nickname_original = nickname
         self._nickname_iteration = 0
+        self._username = username
         self._joined = False
         self._channel = channel
         self._pinger_task = None
@@ -140,17 +140,12 @@ class IRCPuppet(irc.client_aio.AioSimpleIRCClient):
         local_addr = (str(self._ipv6_address), 0)
 
         while self._reconnect:
-            username = self._nickname
-            # An additional constraints usernames have over nicknames, that they are
-            # also not allowed to start with an underscore.
-            username = re.sub(r"^_+", "", username)
-
             try:
                 await self.connection.connect(
                     self._irc_host,
                     self._irc_port,
                     self._nickname,
-                    username=username,
+                    username=self._username,
                     # We force an IPv6 connection, as we need that for the puppet source address.
                     connect_factory=irc.connection.AioFactory(
                         family=socket.AF_INET6, local_addr=local_addr, ssl=self._irc_port == 6697
