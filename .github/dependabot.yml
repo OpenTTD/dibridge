@@ -3,6 +3,8 @@ updates:
 - package-ecosystem: "pip"
   directory: "/"
   schedule:
-    interval: "daily"
-  rebase-strategy: "disabled"
-  open-pull-requests-limit: 10
+    interval: "monthly"
+  groups:
+    dependencies:
+      patterns:
+      - "*"
