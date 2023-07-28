@@ -2,7 +2,6 @@
 max-line-length = 120
 inline-quotes = double
 
-# We use 'black' for coding style; these next two warnings are not PEP-8
-# compliant.
-# E231 is a bug in 'black', see https://github.com/psf/black/issues/1202
-ignore = E203, E231, W503
+# Flake8 is not PEP-8 compliant with E203. See:
+# https://black.readthedocs.io/en/stable/guides/using_black_with_other_tools.html#flake8
+extend-ignore = E203

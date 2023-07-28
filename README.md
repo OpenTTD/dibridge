@@ -1,5 +1,7 @@
 # dibridge: an Discord <-> IRC Bridge
 
+[![GitHub License](https://img.shields.io/github/license/OpenTTD/dibridge)](https://github.com/OpenTTD/dibridge/blob/main/LICENSE)
+
 Sometimes you have parts of your community that don't want to leave IRC.
 But other parts are active on Discord.
 What do you do?
