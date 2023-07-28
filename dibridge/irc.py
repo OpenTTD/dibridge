@@ -241,12 +241,15 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
         return discord_username
 
     def _generate_ipv6_bits(self, discord_username):
-        # Based on the Discord username, generate 48 bits to add to the IPv6 address.
+        # Based on the Discord username, generate N bits to add to the IPv6 address.
         # This way we do not have to persistently store any information, but every user
         # will always have the same IPv6.
-        # For the 48 bits, we simply take the first 48 bits from the SHA-256 hash of the
+        # For the N bits, we simply take the last N bits from the SHA-256 hash of the
         # username. Chances on collision are really low.
-        return int(hashlib.sha256(discord_username.encode("utf-8")).hexdigest(), 16) % (1 << 48)
+        # N here is the length of the IPv6 range assigned.
+        return (
+            int(hashlib.sha256(discord_username.encode("utf-8")).hexdigest(), 16) % self._puppet_ip_range.num_addresses
+        )
 
     async def _stop(self):
         sys.exit(1)
