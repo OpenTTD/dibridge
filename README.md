@@ -115,7 +115,7 @@ First of all, you need Linux 4.3+ for this to work.
 Next, you need to have an IPv6 prefix, of which you can delegate a part to this bridge.
 
 All decent ISPs these days can assign you an IPv6 prefix, mostly a `/64` or better.
-We only need a `/80` for this, so that is fine.
+We only need a `/80` for this (or at least a `/96`), so that is fine.
 Similar, cloud providers also offer assigning IPv6 prefixes to VMs.
 For example [AWS allows you to assign a `/80` to a single VM](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-prefix-eni.html).
 
