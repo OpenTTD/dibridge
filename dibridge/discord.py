@@ -131,6 +131,7 @@ class RelayDiscord(discord.Client):
         if (
             content.startswith("_")
             and content.endswith("_")
+            and len(content) > 2
             and "\n" not in content
             and len(content) < IRC_MAX_LINE_LENGTH
         ):
