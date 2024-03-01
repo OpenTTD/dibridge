@@ -203,9 +203,11 @@ class IRCRelay(irc.client_aio.AioSimpleIRCClient):
             # If the username is said as its own word, replace it with a Discord highlight.
             message = " ".join(
                 [
-                    re.sub(r"(?<!\w)" + re.escape(puppet._nickname) + r"(?!\w)", f"<@{discord_id}>", part)
-                    if "://" not in part
-                    else part
+                    (
+                        re.sub(r"(?<!\w)" + re.escape(puppet._nickname) + r"(?!\w)", f"<@{discord_id}>", part)
+                        if "://" not in part
+                        else part
+                    )
                     for part in message.split(" ")
                 ]
             )
