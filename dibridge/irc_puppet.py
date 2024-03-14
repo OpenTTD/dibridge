@@ -1,6 +1,7 @@
 import asyncio
 import irc.client_aio
 import logging
+import random
 import socket
 
 
@@ -135,20 +136,50 @@ class IRCPuppet(irc.client_aio.AioSimpleIRCClient):
         self._client.nick(self._nickname)
 
     async def connect(self):
-        self._log.info("Connecting to IRC from %s ...", self._ipv6_address)
-
         local_addr = (str(self._ipv6_address), 0)
+        use_ssl = self._irc_port == 6697
 
         while self._reconnect:
+            # As per RFC, getaddrinfo() sorts IPv6 results in some complicated way.
+            # In result, even if the IRC host has multiple IPv6 addresses listed,
+            # we will pick almost always the same one. This gives unneeded pressure
+            # on a single host, instead of distributing the load. So instead, we do
+            # the lookup ourselves, and pick a random one.
+            try:
+                ipv6s = await self.loop.getaddrinfo(
+                    self._irc_host,
+                    None,
+                    family=socket.AF_INET6,
+                    type=socket.SOCK_STREAM,
+                    proto=socket.IPPROTO_TCP,
+                )
+            except socket.gaierror:
+                ipv6s = []
+
+            if not ipv6s:
+                self._log.warning("Failed DNS lookup, retrying in 5 seconds")
+                # When we can't connect, try again in 5 seconds.
+                await asyncio.sleep(5)
+                continue
+
+            irc_host_ipv6 = random.choice(ipv6s)[4][0]
+
+            self._log.info(
+                "Connecting to IRC from %s to %s (%s) ...", self._ipv6_address, self._irc_host, irc_host_ipv6
+            )
+
             try:
                 await self.connection.connect(
-                    self._irc_host,
+                    irc_host_ipv6,
                     self._irc_port,
                     self._nickname,
                     username=self._username,
                     # We force an IPv6 connection, as we need that for the puppet source address.
                     connect_factory=irc.connection.AioFactory(
-                        family=socket.AF_INET6, local_addr=local_addr, ssl=self._irc_port == 6697
+                        family=socket.AF_INET6,
+                        local_addr=local_addr,
+                        ssl=use_ssl,
+                        server_hostname=self._irc_host if use_ssl else None,
                     ),
                 )
                 break
