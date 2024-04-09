@@ -184,12 +184,24 @@ class RelayDiscord(discord.Client):
     # Thread safe wrapper around functions
 
     def send_message(self, irc_username, message):
+        if self.loop == discord.utils.MISSING:
+            log.warning(f"Can't relay message from {irc_username} to Discord: connection is down.")
+            return
+
         asyncio.run_coroutine_threadsafe(self._send_message(irc_username, message), self.loop)
 
     def send_message_self(self, message):
+        if self.loop == discord.utils.MISSING:
+            log.warning("Can't relay status message to Discord: connection is down.")
+            return
+
         asyncio.run_coroutine_threadsafe(self._send_message_self(message), self.loop)
 
     def update_presence(self, status):
+        if self.loop == discord.utils.MISSING:
+            log.warning(f"Can't update presence to {status}: connection is down.")
+            return
+
         asyncio.run_coroutine_threadsafe(self._update_presence(status), self.loop)
 
 
