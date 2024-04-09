@@ -207,4 +207,13 @@ class RelayDiscord(discord.Client):
 
 def start(token, channel_id):
     relay.DISCORD = RelayDiscord(channel_id)
-    relay.DISCORD.run(token, log_handler=None)
+    backoff = discord.backoff.ExponentialBackoff()
+
+    while True:
+        try:
+            relay.DISCORD.run(token, log_handler=None)
+        except Exception:
+            retry = backoff.delay()
+            log.exception("Discord client stopped unexpectedly; will reconnect in %.2f seconds", retry)
+
+            asyncio.run(asyncio.sleep(retry))
