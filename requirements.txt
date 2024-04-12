@@ -11,7 +11,7 @@ charset-normalizer==3.3.2
 click==8.1.7
 discord.py==2.3.2
 frozenlist==1.4.1
-idna==3.6
+idna==3.7
 inflect==7.2.0
 irc==20.4.0
 jaraco.classes==3.4.0
