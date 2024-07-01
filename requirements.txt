@@ -25,7 +25,7 @@ more-itertools==10.3.0
 multidict==6.0.5
 openttd-helpers==1.4.0
 pydantic==2.7.4
-pydantic_core==2.20.0
+pydantic_core==2.18.4
 pytz==2024.1
 sentry-sdk==2.7.1
 tempora==5.6.0
