@@ -12,7 +12,7 @@ click==8.1.7
 discord.py==2.4.0
 frozenlist==1.4.1
 idna==3.7
-inflect==7.3.0
+inflect==7.3.1
 irc==20.4.1
 jaraco.classes==3.4.0
 jaraco.collections==5.0.1
@@ -24,8 +24,8 @@ jaraco.text==3.12.1
 more-itertools==10.3.0
 multidict==6.0.5
 openttd-helpers==1.4.0
-pydantic==2.7.4
-pydantic_core==2.18.4
+pydantic==2.8.0
+pydantic_core==2.20.0
 pytz==2024.1
 sentry-sdk==2.7.1
 tempora==5.6.0
