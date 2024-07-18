@@ -27,7 +27,7 @@ openttd-helpers==1.4.0
 pydantic==2.7.4
 pydantic_core==2.18.4
 pytz==2024.1
-sentry-sdk==2.7.1
+sentry-sdk==2.8.0
 tempora==5.6.0
 typeguard==4.3.0
 typing_extensions==4.12.2
