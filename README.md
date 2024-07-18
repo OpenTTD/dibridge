@@ -83,10 +83,6 @@ This application logs in as a Discord bot to get a presence on Discord.
 You have to create this bot yourself, by going to https://discord.com/developers/ and registering one.
 The Discord token can be found under `Bot`.
 
-After creating a bot, you need to invite this bot to your Discord channel.
-If you are not the owner of that channel, you would need to make the bot `Public` before the admin can add it.
-The bot needs at least `Send Messages`, `Read Messages` and `Manage Webhooks` permissions to operate in a channel.
-
 Additionally, the bot uses the following intents:
 - `messages`: to read messages.
 - `guilds`: to read channel information.
@@ -96,6 +92,11 @@ Additionally, the bot uses the following intents:
 
 Some of these intents need additional permission on the bot's side, under `Privileged Gateway Intents`.
 Without those, this application will fail to start.
+
+After creating a bot, you need to invite this bot to your Discord channel.
+If you are not the owner of that channel, you would need to make the bot `Public` before the admin can add it.
+The bot needs at least `Send Messages`, `Read Messages` and `Manage Webhooks` permissions on the Discord server channel.
+These permissions need to be assigned on the Discord server itself, by someone with sufficient permissions to do so.
 
 ### IRC Puppet IP Range
 
